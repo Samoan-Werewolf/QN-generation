@@ -1,0 +1,107 @@
+{
+  "policy_source": "HR_POLICY_LEAVE.markdown",
+  "generated_at": "2026-04-02T09:14:39Z",
+  "question_count": 25,
+  "questions": [
+    {
+      "question_number": 1,
+      "question": "What types of leave are available to me?"
+    },
+    {
+      "question_number": 2,
+      "question": "How do I calculate my annual leave entitlement if I join mid-year?"
+    },
+    {
+      "question_number": 3,
+      "question": "Can I carry forward unused annual leave to the next year?"
+    },
+    {
+      "question_number": 4,
+      "question": "What is the maximum number of days that can be carried forward?"
+    },
+    {
+      "question_number": 5,
+      "question": "When do I need to use my carried-forward leave by?"
+    },
+    {
+      "question_number": 6,
+      "question": "Can I encash my annual leave, and if so, under what circumstances?"
+    },
+    {
+      "question_number": 7,
+      "question": "What is the sick leave entitlement for outpatient appointments?"
+    },
+    {
+      "question_number": 8,
+      "question": "How many days of hospitalisation leave am I entitled to?"
+    },
+    {
+      "question_number": 9,
+      "question": "Do I need a medical certificate to take sick leave?"
+    },
+    {
+      "question_number": 10,
+      "question": "What is the deadline for submitting a medical certificate for sick leave?"
+    },
+    {
+      "question_number": 11,
+      "question": "Can I apply for unpaid leave if I'm unable to work due to illness?"
+    },
+    {
+      "question_number": 12,
+      "question": "How do I schedule time off for medical appointments during working hours?"
+    },
+    {
+      "question_number": 13,
+      "question": "What is the maternity leave entitlement, and what are the eligibility criteria?"
+    },
+    {
+      "question_number": 14,
+      "question": "Can my partner take paternity leave if I'm having a child?"
+    },
+    {
+      "question_number": 15,
+      "question": "How many days of compassionate leave am I entitled to for an immediate family member's passing?"
+    },
+    {
+      "question_number": 16,
+      "question": "Can I take marriage leave, and if so, how many days is the entitlement?"
+    },
+    {
+      "question_number": 17,
+      "question": "What is study leave, and can I apply for it?"
+    },
+    {
+      "question_number": 18,
+      "question": "Do I need to apply for leave in advance, and if so, how far in advance?"
+    },
+    {
+      "question_number": 19,
+      "question": "What factors will my supervisor consider when approving or denying my leave request?"
+    },
+    {
+      "question_number": 20,
+      "question": "Can I take unpaid leave for personal reasons, and if so, how do I apply?"
+    },
+    {
+      "question_number": 21,
+      "question": "What public holidays am I entitled to, and what happens if I'm required to work on one?"
+    },
+    {
+      "question_number": 22,
+      "question": "Can I get replacement leave or overtime compensation if I'm forced to work on a public holiday?"
+    },
+    {
+      "question_number": 23,
+      "question": "How often is the Leave Policy reviewed, and what are the purposes of these reviews?"
+    },
+    {
+      "question_number": 24,
+      "question": "Who can I contact if I have questions or concerns about the Leave Policy?"
+    },
+    {
+      "question_number": 25,
+      "question": "Are there any exclusions or limitations to the Leave Policy that I should be aware of?"
+    }
+  ]
+}

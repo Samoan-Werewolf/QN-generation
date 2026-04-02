@@ -1,0 +1,138 @@
+{
+  "policy_source": "HR_POLICY_MED.md",
+  "generated_at": "2026-04-02T09:10:42Z",
+  "total_sections": 5,
+  "total_questions": 25,
+  "sections": [
+    {
+      "section": "**Page 1: Introduction & Scope**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "What does 'pro-rated benefits' mean for part-time employees?"
+        },
+        {
+          "question_number": 2,
+          "question": "How will the company support preventive care and early treatment?"
+        },
+        {
+          "question_number": 3,
+          "question": "Who is considered a dependent under this policy?"
+        },
+        {
+          "question_number": 4,
+          "question": "What are the panel clinics approved by the company's insurer?"
+        },
+        {
+          "question_number": 5,
+          "question": "How will the company reduce financial burden from medical expenses?"
+        }
+      ]
+    },
+    {
+      "section": "**Page 2: Eligibility & Coverage**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "Do I need to work full-time to be eligible for benefits?"
+        },
+        {
+          "question_number": 2,
+          "question": "How do my part-time hours affect my eligibility for medical benefits?"
+        },
+        {
+          "question_number": 3,
+          "question": "What if I'm a contract staff member? Will I still get benefits?"
+        },
+        {
+          "question_number": 4,
+          "question": "When can I start using the company's medical benefits after joining?"
+        },
+        {
+          "question_number": 5,
+          "question": "Can my parents be covered under the dependent coverage option?"
+        }
+      ]
+    },
+    {
+      "section": "**Page 3: Benefits Structure**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "What does it mean by 'GP Consultation' and how many times can I visit a GP within the annual coverage limit?"
+        },
+        {
+          "question_number": 2,
+          "question": "If I need to stay in the hospital for more than 10 days, will my company cover the entire cost or is there an additional out-of-pocket expense?"
+        },
+        {
+          "question_number": 3,
+          "question": "Can I see a specialist without going through my primary care physician first? Are there any restrictions on specialist visits within the annual coverage limit?"
+        },
+        {
+          "question_number": 4,
+          "question": "How do I know what's considered an 'outpatient' versus an 'inpatient' visit, and how does that affect my co-payment amount?"
+        },
+        {
+          "question_number": 5,
+          "question": "What happens if I exceed the annual claim limit of $20,000? Do I have to pay out-of-pocket for any additional medical expenses?"
+        }
+      ]
+    },
+    {
+      "section": "**Page 4: Claims & Procedures**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "What are panel clinics and how do they benefit me?"
+        },
+        {
+          "question_number": 2,
+          "question": "How do I submit a claim for medical expenses, and what's the deadline?"
+        },
+        {
+          "question_number": 3,
+          "question": "What kind of documents do I need to provide when submitting a claim?"
+        },
+        {
+          "question_number": 4,
+          "question": "Are there any medical expenses that aren't covered by the company's policy?"
+        },
+        {
+          "question_number": 5,
+          "question": "How long does it take for my claim to be processed after I submit it?"
+        }
+      ]
+    },
+    {
+      "section": "**Page 5: Special Provisions & Review**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "What does the annual health screening cover, and how do I schedule it?"
+        },
+        {
+          "question_number": 2,
+          "question": "Can I get vaccinated for a condition that's not on the company-approved list?"
+        },
+        {
+          "question_number": 3,
+          "question": "How does the extended medication coverage work, and what are the eligibility criteria?"
+        },
+        {
+          "question_number": 4,
+          "question": "What happens if I get injured at work? Who do I contact for support?"
+        },
+        {
+          "question_number": 5,
+          "question": "How often will my questions be answered, and what's the best way to reach out to HR for policy-related queries?"
+        }
+      ]
+    }
+  ]
+}

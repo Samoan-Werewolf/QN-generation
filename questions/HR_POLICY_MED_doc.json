@@ -1,0 +1,107 @@
+{
+  "policy_source": "HR_POLICY_MED.md",
+  "generated_at": "2026-04-02T09:12:59Z",
+  "question_count": 25,
+  "questions": [
+    {
+      "question_number": 1,
+      "question": "What kind of employees are eligible for medical benefits?"
+    },
+    {
+      "question_number": 2,
+      "question": "How long do I have to wait before being eligible for medical benefits as a new employee?"
+    },
+    {
+      "question_number": 3,
+      "question": "Can my spouse and children get medical coverage under this policy?"
+    },
+    {
+      "question_number": 4,
+      "question": "What is the maximum out-of-pocket expense I can expect to pay for outpatient visits?"
+    },
+    {
+      "question_number": 5,
+      "question": "How much does the company contribute towards my inpatient hospital stay expenses?"
+    },
+    {
+      "question_number": 6,
+      "question": "What is the annual claim limit per employee, and how will it affect my coverage?"
+    },
+    {
+      "question_number": 7,
+      "question": "Do I need to use a specific clinic or doctor for medical services?"
+    },
+    {
+      "question_number": 8,
+      "question": "How do I submit a claim for medical expenses, and what documents are required?"
+    },
+    {
+      "question_number": 9,
+      "question": "Are there any exclusions or non-reimbursable expenses under this policy?"
+    },
+    {
+      "question_number": 10,
+      "question": "Can I get a second opinion on my medical condition, and if so, how do I go about it?"
+    },
+    {
+      "question_number": 11,
+      "question": "What is the process for getting approval for specialist consultations or treatments?"
+    },
+    {
+      "question_number": 12,
+      "question": "Can I get a copy of my medical records from the company's HR department?"
+    },
+    {
+      "question_number": 13,
+      "question": "How do I know if a treatment or procedure is covered under this policy?"
+    },
+    {
+      "question_number": 14,
+      "question": "Can I get reimbursement for over-the-counter medications and supplements?"
+    },
+    {
+      "question_number": 15,
+      "question": "What happens if I need to see a specialist, but they are not part of the panel clinics?"
+    },
+    {
+      "question_number": 16,
+      "question": "How do I know which medical services or treatments are considered preventive care?"
+    },
+    {
+      "question_number": 17,
+      "question": "Can my dependents get separate coverage for chronic illnesses, and if so, how does it work?"
+    },
+    {
+      "question_number": 18,
+      "question": "What is the process for getting a workplace injury claim approved under this policy?"
+    },
+    {
+      "question_number": 19,
+      "question": "Can I get reimbursement for travel-related expenses related to medical treatment or appointments?"
+    },
+    {
+      "question_number": 20,
+      "question": "How do I know if my medical condition is considered a chronic illness and eligible for extended coverage?"
+    },
+    {
+      "question_number": 21,
+      "question": "Can I get reimbursement for alternative therapies like acupuncture or massage therapy?"
+    },
+    {
+      "question_number": 22,
+      "question": "What happens if I need to see a specialist, but they are not available in my area?"
+    },
+    {
+      "question_number": 23,
+      "question": "Can I get reimbursement for medical expenses incurred during travel or abroad?"
+    },
+    {
+      "question_number": 24,
+      "question": "How do I know if a treatment or procedure is considered experimental and not covered under this policy?"
+    },
+    {
+      "question_number": 25,
+      "question": "Can I get reimbursement for medical expenses related to cosmetic procedures, such as plastic surgery?"
+    }
+  ]
+}

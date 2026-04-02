@@ -1,0 +1,138 @@
+{
+  "policy_source": "HR_POLICY_LEAVE.markdown",
+  "generated_at": "2026-04-02T09:08:51Z",
+  "total_sections": 5,
+  "total_questions": 25,
+  "sections": [
+    {
+      "section": "**Page 1: Introduction & General Principles**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "What types of leave are available to me as an employee?"
+        },
+        {
+          "question_number": 2,
+          "question": "How do I apply for leave, and what's the process like?"
+        },
+        {
+          "question_number": 3,
+          "question": "Can I take leave during my first few weeks of employment?"
+        },
+        {
+          "question_number": 4,
+          "question": "What happens if I need to take a longer period of leave, such as a vacation or family emergency?"
+        },
+        {
+          "question_number": 5,
+          "question": "How do you define 'Immediate Family' for the purposes of this policy?"
+        }
+      ]
+    },
+    {
+      "section": "**Page 2: Annual Leave Entitlements**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "How many annual leave days do I get in my first year?"
+        },
+        {
+          "question_number": 2,
+          "question": "If I join mid-year, how will my pro-rated leave be calculated?"
+        },
+        {
+          "question_number": 3,
+          "question": "Can I carry forward any unused annual leave to the next year?"
+        },
+        {
+          "question_number": 4,
+          "question": "What happens if I don't use my carried-forward leave within the first quarter of the next year?"
+        },
+        {
+          "question_number": 5,
+          "question": "Can I encash some of my annual leave, or is it only possible when I resign from the company?"
+        }
+      ]
+    },
+    {
+      "section": "**Page 3: Medical & Sick Leave**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "What does 'outpatient leave' mean, and how is it different from hospitalization?"
+        },
+        {
+          "question_number": 2,
+          "question": "How do I get a medical certificate (MC) if I need to take sick leave?"
+        },
+        {
+          "question_number": 3,
+          "question": "What happens if I don't have enough annual leave balance for an extended illness? Can I still apply for unpaid leave?"
+        },
+        {
+          "question_number": 4,
+          "question": "Can I schedule a medical appointment during work hours, or do I need to take time off?"
+        },
+        {
+          "question_number": 5,
+          "question": "What's the process if my doctor says I need more than 60 days of hospitalization? Can I apply for additional leave?"
+        }
+      ]
+    },
+    {
+      "section": "**Page 4: Special Leave Types**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "How do I know if I'm eligible for maternity/paternity leave?"
+        },
+        {
+          "question_number": 2,
+          "question": "Can I take my study leave at the same time as another type of special leave?"
+        },
+        {
+          "question_number": 3,
+          "question": "What happens if I need to take compassionate leave for an extended family member, but it's not within the first day?"
+        },
+        {
+          "question_number": 4,
+          "question": "Can I use my marriage leave at a different time than when I get married?"
+        },
+        {
+          "question_number": 5,
+          "question": "How do I request special leave, and what documentation might I need to provide?"
+        }
+      ]
+    },
+    {
+      "section": "**Page 5: Leave Application & Administration**",
+      "question_count": 5,
+      "qa_pairs": [
+        {
+          "question_number": 1,
+          "question": "How do I submit my leave application?"
+        },
+        {
+          "question_number": 2,
+          "question": "What happens if I forget to apply for leave in advance, but it's an emergency situation?"
+        },
+        {
+          "question_number": 3,
+          "question": "Can I take unpaid leave if I need to attend to a personal matter?"
+        },
+        {
+          "question_number": 4,
+          "question": "What happens on public holidays when the company is closed? Do I still get paid?"
+        },
+        {
+          "question_number": 5,
+          "question": "How often will this leave policy be reviewed, and what changes can I expect to see?"
+        }
+      ]
+    }
+  ]
+}
