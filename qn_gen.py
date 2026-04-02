@@ -1,22 +1,28 @@
 from flask import Flask, render_template, request, jsonify, send_file, abort
-import requests
+from openai import AzureOpenAI
+from dotenv import load_dotenv
 import json
 import re
+import os
 import time
 import zipfile
 import io
 from pathlib import Path
 
+load_dotenv()
+
 app = Flask(__name__)
 
 # ── CONFIG ─────────────────────────────────────────────
 BASE_DIR   = Path(__file__).resolve().parent
-INPUT_DIR  = BASE_DIR / "policies"       # folder of .md / .markdown files
-OUTPUT_DIR = BASE_DIR / "questions"      # folder where JSONs are written
+INPUT_DIR  = BASE_DIR / "policies"
+OUTPUT_DIR = BASE_DIR / "questions"
 
-OLLAMA_URL          = "http://localhost:11434/api/generate"
-MODEL_NAME          = "llama3"
-OLLAMA_TIMEOUT      = 120
+AZURE_ENDPOINT       = os.getenv("AZURE_OPENAI_ENDPOINT")       # e.g. https://your-resource.openai.azure.com/
+AZURE_API_KEY        = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_API_VERSION    = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
+AZURE_DEPLOYMENT     = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+
 QUESTIONS_PER_FILE  = 25
 # ───────────────────────────────────────────────────────
 
@@ -49,49 +55,43 @@ The JSON must follow this exact structure:
 """.strip()
 
 
-# ── OLLAMA ─────────────────────────────────────────────
+# ── AZURE OPENAI ────────────────────────────────────────
 
-def call_ollama(prompt: str) -> str:
-    payload = {
-        "model": MODEL_NAME,
-        "prompt": prompt,
-        "stream": False,
-        "options": {"temperature": 0.3, "num_predict": 2000},
-    }
-    try:
-        resp = requests.post(OLLAMA_URL, json=payload, timeout=OLLAMA_TIMEOUT)
-        if resp.status_code == 200:
-            return resp.json().get("response", "").strip()
-        return f"Error: Ollama returned status {resp.status_code}\n{resp.text}"
-    except requests.exceptions.ConnectionError:
-        return "Error: Cannot reach Ollama. Is it running? Try: ollama serve"
-    except requests.exceptions.Timeout:
-        return f"Error: Ollama timed out after {OLLAMA_TIMEOUT}s."
-    except Exception as e:
-        return f"Error: {e}"
+def get_client() -> AzureOpenAI:
+    if not AZURE_ENDPOINT or not AZURE_API_KEY:
+        raise RuntimeError("Azure credentials missing. Check your .env file.")
+    return AzureOpenAI(
+        azure_endpoint=AZURE_ENDPOINT,
+        api_key=AZURE_API_KEY,
+        api_version=AZURE_API_VERSION,
+    )
+
+
+def call_azure(prompt: str) -> str:
+    client = get_client()
+    response = client.chat.completions.create(
+        model=AZURE_DEPLOYMENT,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=2000,
+    )
+    return response.choices[0].message.content.strip()
 
 
 def parse_json_response(raw: str) -> list[dict]:
     """Strip markdown fences, fix common model JSON typos, then parse."""
     clean = raw.strip()
 
-    # Strip markdown fences
     if clean.startswith("```"):
         clean = clean.split("```")[1]
         if clean.startswith("json"):
             clean = clean[4:]
         clean = clean.strip()
 
-    # Remove invalid backslash escapes (model over-escapes $, @, +, %, #, etc.)
     clean = re.sub(r'\\([^\"\\\/bfnrtu])', r'\1', clean)
-
-    # Fix stray quotes after numbers e.g. "question_number": 4"
     clean = re.sub(r':\s*(\d+)"', r': \1', clean)
-
-    # Fix trailing commas before ] or }
     clean = re.sub(r',\s*([}\]])', r'\1', clean)
 
-    # If model truncated the JSON, close any open structures
     open_braces = clean.count('{') - clean.count('}')
     if open_braces > 0:
         clean = clean.rstrip(',\n ') + ('}' * open_braces)
@@ -104,7 +104,6 @@ def parse_json_response(raw: str) -> list[dict]:
 # ── Q&A GENERATION ─────────────────────────────────────
 
 def generate_questions(policy_content: str, n: int, dry_run: bool) -> list[dict]:
-    """Send the full policy to Ollama and return n questions as a list."""
     if dry_run:
         return [
             {"question_number": i, "question": f"[DRY RUN] Sample question {i}"}
@@ -112,10 +111,7 @@ def generate_questions(policy_content: str, n: int, dry_run: bool) -> list[dict]
         ]
 
     prompt = HR_QA_PROMPT.format(policy_content=policy_content[:6000], n=n)
-    raw    = call_ollama(prompt)
-
-    if raw.startswith("Error:"):
-        raise RuntimeError(raw)
+    raw    = call_azure(prompt)
 
     try:
         questions = parse_json_response(raw)
@@ -129,7 +125,6 @@ def generate_questions(policy_content: str, n: int, dry_run: bool) -> list[dict]
 
 
 def process_file(md_path: Path, n: int, dry_run: bool) -> dict:
-    """Read one markdown file and generate questions from the full content."""
     policy_content = md_path.read_text(encoding="utf-8")
     questions      = generate_questions(policy_content, n=n, dry_run=dry_run)
 
@@ -151,12 +146,10 @@ def home():
 @app.route("/health")
 def health():
     try:
-        resp = requests.get("http://localhost:11434/api/tags", timeout=5)
-        if resp.status_code == 200:
-            return jsonify({"ok": True, "message": "Ollama is running"})
-        return jsonify({"ok": False, "message": f"Ollama returned {resp.status_code}"}), 500
-    except Exception:
-        return jsonify({"ok": False, "message": "Ollama is not running"}), 500
+        get_client()
+        return jsonify({"ok": True, "message": "Azure OpenAI credentials loaded"})
+    except RuntimeError as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
 
 
 @app.route("/run", methods=["POST"])
@@ -166,24 +159,15 @@ def run():
         dry_run = data.get("dry_run", False)
         n       = int(data.get("questions_per_file", QUESTIONS_PER_FILE))
 
-        # Validate input folder
         if not INPUT_DIR.exists():
-            return jsonify({
-                "ok": False,
-                "message": f"Input folder not found: '{INPUT_DIR}'. Create it and add markdown files."
-            }), 400
+            return jsonify({"ok": False, "message": f"Input folder not found: '{INPUT_DIR}'."}), 400
 
         md_files = sorted(INPUT_DIR.glob("*.md")) + sorted(INPUT_DIR.glob("*.markdown"))
         if not md_files:
-            return jsonify({
-                "ok": False,
-                "message": f"No .md or .markdown files found in '{INPUT_DIR}'."
-            }), 400
+            return jsonify({"ok": False, "message": f"No .md or .markdown files found in '{INPUT_DIR}'."}), 400
 
-        # Create output folder if it doesn't exist
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-        # Process each file
         summary = []
         for md_path in md_files:
             output   = process_file(md_path, n=n, dry_run=dry_run)
@@ -212,7 +196,6 @@ def run():
 
 @app.route("/download/<filename>")
 def download(filename):
-    """Download a specific output JSON by filename e.g. /download/HR_POLICY.json"""
     out_path = OUTPUT_DIR / filename
     if not out_path.exists() or out_path.suffix != ".json":
         abort(404)
@@ -221,7 +204,6 @@ def download(filename):
 
 @app.route("/download_all")
 def download_all():
-    """Download all output JSONs bundled as a zip file."""
     json_files = list(OUTPUT_DIR.glob("*.json"))
     if not json_files:
         return "No JSON files generated yet. Please call /run first.", 404
@@ -232,17 +214,11 @@ def download_all():
             zf.write(f, f.name)
     buf.seek(0)
 
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name="hr_policy_questions.zip",
-        mimetype="application/zip",
-    )
+    return send_file(buf, as_attachment=True, download_name="hr_policy_questions.zip", mimetype="application/zip")
 
 
 @app.route("/list")
 def list_outputs():
-    """List all generated JSON files in the output folder."""
     if not OUTPUT_DIR.exists():
         return jsonify({"ok": True, "files": []})
     files = [f.name for f in sorted(OUTPUT_DIR.glob("*.json"))]
