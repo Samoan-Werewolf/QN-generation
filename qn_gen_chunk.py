@@ -14,9 +14,9 @@ load_dotenv()
 app = Flask(__name__)
 
 # ── CONFIG ─────────────────────────────────────────────
-BASE_DIR   = Path(__file__).resolve().parent
-INPUT_DIR  = BASE_DIR / "policies"
-OUTPUT_DIR = BASE_DIR / "questions"
+BASE_DIR      = Path(__file__).resolve().parent
+INPUT_DIR     = BASE_DIR / "Output_folder"
+OUTPUT_DIR    = BASE_DIR / "questions"
 
 AZURE_ENDPOINT       = os.getenv("AZURE_OPENAI_ENDPOINT")       # e.g. https://your-resource.openai.azure.com/
 AZURE_API_KEY        = os.getenv("AZURE_OPENAI_API_KEY")
@@ -50,25 +50,6 @@ The JSON must follow this exact structure:
   }}
 ]
 """.strip()
-
-
-# ── CHUNKING ───────────────────────────────────────────
-
-def chunk_by_header(md_text: str) -> list[dict]:
-    """Split markdown into chunks at every ## header."""
-    header_pattern = re.compile(r"^(#{2})\s+(.+)", re.MULTILINE)
-    matches = list(header_pattern.finditer(md_text))
-
-    chunks = []
-    for i, match in enumerate(matches):
-        title   = match.group(2).strip()
-        start   = match.end()
-        end     = matches[i + 1].start() if i + 1 < len(matches) else len(md_text)
-        content = md_text[start:end].strip()
-        if len(content) >= 30:
-            chunks.append({"title": title, "content": content})
-
-    return chunks
 
 
 # ── AZURE OPENAI ────────────────────────────────────────
@@ -147,9 +128,30 @@ def generate_qa_for_chunk(chunk: dict, n: int, dry_run: bool) -> list[dict]:
     return qa_list
 
 
-def process_file(md_path: Path, n: int, dry_run: bool) -> dict:
-    text   = md_path.read_text(encoding="utf-8")
-    chunks = chunk_by_header(text)
+def load_chunks(json_path: Path) -> list[dict]:
+    """
+    Load pre-built chunks from a JSON file in Output_folder.
+    Accepts either a plain list or a dict with a 'chunks' key.
+    Each chunk must have 'title' and 'content' keys.
+    """
+    raw = json.loads(json_path.read_text(encoding="utf-8"))
+
+    if isinstance(raw, list):
+        chunks = raw
+    elif isinstance(raw, dict):
+        chunks = raw.get("chunks", [])
+    else:
+        raise ValueError(f"'{json_path.name}': expected a JSON list or object with a 'chunks' key.")
+
+    for i, chunk in enumerate(chunks):
+        if "title" not in chunk or "content" not in chunk:
+            raise ValueError(f"'{json_path.name}': chunk {i} is missing 'title' or 'content'.")
+
+    return chunks
+
+
+def process_file(json_path: Path, n: int, dry_run: bool) -> dict:
+    chunks = load_chunks(json_path)
 
     if not chunks:
         return None
@@ -165,7 +167,7 @@ def process_file(md_path: Path, n: int, dry_run: bool) -> dict:
         time.sleep(0.3)
 
     return {
-        "policy_source":   str(md_path.name),
+        "policy_source":   json_path.name,
         "generated_at":    time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "total_sections":  len(sections),
         "total_questions": sum(s["question_count"] for s in sections),
@@ -199,25 +201,25 @@ def run():
         if not INPUT_DIR.exists():
             return jsonify({"ok": False, "message": f"Input folder not found: '{INPUT_DIR}'."}), 400
 
-        md_files = list(INPUT_DIR.glob("*.md")) + list(INPUT_DIR.glob("*.markdown"))
-        if not md_files:
-            return jsonify({"ok": False, "message": f"No .md or .markdown files found in '{INPUT_DIR}'."}), 400
+        json_files = sorted(INPUT_DIR.glob("*.json"))
+        if not json_files:
+            return jsonify({"ok": False, "message": f"No .json files found in '{INPUT_DIR}'."}), 400
 
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
         summary = []
-        for md_path in sorted(md_files):
-            output = process_file(md_path, n=n, dry_run=dry_run)
+        for json_path in json_files:
+            output = process_file(json_path, n=n, dry_run=dry_run)
 
             if output is None:
-                summary.append({"file": md_path.name, "status": "skipped", "reason": "No ## headers found"})
+                summary.append({"file": json_path.name, "status": "skipped", "reason": "No chunks found"})
                 continue
 
-            out_path = OUTPUT_DIR / (md_path.stem + "_doc.json")
+            out_path = OUTPUT_DIR / (json_path.stem + "_doc.json")
             out_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
 
             summary.append({
-                "file":            md_path.name,
+                "file":            json_path.name,
                 "status":          "ok",
                 "output":          out_path.name,
                 "total_sections":  output["total_sections"],
@@ -226,7 +228,7 @@ def run():
 
         return jsonify({
             "ok":              True,
-            "files_found":     len(md_files),
+            "files_found":     len(json_files),
             "files_processed": sum(1 for s in summary if s["status"] == "ok"),
             "output_folder":   str(OUTPUT_DIR),
             "summary":         summary,
