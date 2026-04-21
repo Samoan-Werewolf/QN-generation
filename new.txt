@@ -6,6 +6,9 @@ import requests
 from datetime import datetime
 from pathlib import Path
 from cryptography.fernet import Fernet
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+
+TIMEOUT_SECONDS = 60
 
 # --- Path setup ---
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -164,22 +167,41 @@ def main():
     print(f"Loaded {len(queries)} queries\n")
 
     answered = []
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = ANSWERED_FOLDER / f"answers_{timestamp}.json"
 
     for item in queries:
         query = item["query"]
         print(f"[{item.get('policy_source','')} | {item.get('section','')} | Q{item.get('question_number','')}]")
         print(f"Q: {query}")
 
-        with lf.start_as_current_observation(as_type="span", name="QnA") as start_trace:
-            personalized_text = run_pipeline(query, system_content, az_openai_client, lf, start_trace)
-            start_trace.update_trace(
-                input=query,
-                output=personalized_text,
-                user_id='pipeline',
-            )
-            lf.flush()
+        try:
+            with lf.start_as_current_observation(as_type="span", name="QnA") as start_trace:
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(
+                        run_pipeline, query, system_content, az_openai_client, lf, start_trace
+                    )
+                    personalized_text = future.result(timeout=TIMEOUT_SECONDS)
 
-        print(f"A: {personalized_text}\n{'-'*60}\n")
+                start_trace.update_trace(
+                    input=query,
+                    output=personalized_text,
+                    user_id='pipeline',
+                )
+                lf.flush()
+
+            print(f"A: {personalized_text}\n{'-'*60}\n")
+            status = "answered"
+
+        except FuturesTimeoutError:
+            print(f"TIMEOUT after {TIMEOUT_SECONDS}s — skipping question.\n{'-'*60}\n")
+            personalized_text = ""
+            status = "timeout"
+
+        except Exception as e:
+            print(f"ERROR: {e} — skipping question.\n{'-'*60}\n")
+            personalized_text = ""
+            status = "error"
 
         answered.append({
             "policy_source":   item.get("policy_source", ""),
@@ -187,13 +209,17 @@ def main():
             "question_number": item.get("question_number"),
             "question":        query,
             "answer":          personalized_text,
+            "status":          status,
         })
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_path = ANSWERED_FOLDER / f"answers_{timestamp}.json"
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(answered, f, ensure_ascii=False, indent=2)
-    print(f"\nSaved {len(answered)} answers → {out_path}")
+        # Save incrementally after every question
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(answered, f, ensure_ascii=False, indent=2)
+        print(f"Saved {len(answered)}/{len(queries)} → {out_path}")
+
+    print(f"\nDone. {sum(1 for a in answered if a['status'] == 'answered')} answered, "
+          f"{sum(1 for a in answered if a['status'] == 'timeout')} timed out, "
+          f"{sum(1 for a in answered if a['status'] == 'error')} errored.")
 
 
 if __name__ == "__main__":
