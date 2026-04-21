@@ -1,25 +1,57 @@
+import sys
+import os
+import json
+import ast
+import requests
+from datetime import datetime
+from pathlib import Path
+from cryptography.fernet import Fernet
+
+# --- Path setup ---
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+sys.path.insert(0, str(PROJECT_ROOT / "src" / "server"))
+
 import server.chat.llm_core as llm_core
 from server.model_source.config import Config
 from openai import AzureOpenAI
 from langfuse import get_client
 from server.model_source.modules.prompts import get_prompt_template
-from datetime import datetime
 
-import server.model_source.dcc_ai_search_json as dcc_ai_search_json
+# --- Fixed config ---
+USERNAME        = "ESP567E"
+SAP_URL         = "https://ai-gateway.qa.in.spdigital.sg/ai-search"
+SAP_DATA_KEY    = "ctWsiFNflfxvD4MWvVt0CqKKs0mYr1SWYe4kk-GV9Oo="
 
-import importlib
-importlib.reload(llm_core)
-importlib.reload(dcc_ai_search_json)
+BASE_DIR        = Path(__file__).resolve().parent
+QUERIES_FOLDER  = BASE_DIR / "input_queries"
+ANSWERED_FOLDER = BASE_DIR / "answered"
+ANSWERED_FOLDER.mkdir(exist_ok=True)
 
-# --- Load queries from JSON files in input_queries/ folder ---
-QUERIES_FOLDER = os.path.join(os.path.dirname(os.path.abspath("__file__")), "input_queries")
-ANSWERED_FOLDER = os.path.join(os.path.dirname(os.path.abspath("__file__")), "answered")
-os.makedirs(ANSWERED_FOLDER, exist_ok=True)
+SAP_HEADERS = {
+    'Content-Type': 'application/json',
+    'model': 'openai',
+    'subModel': 'text-embedding-3-large',
+    'client-id': 'a3f7b27d767940f8be5f72779912fe03',
+    'client-secret': '2366CCd77d964e82831f5E251678C0Cf',
+    'project': 'HRBuddy',
+    'vector-index': 'spl_hr_buddy_sap'
+}
 
-queries = []
-for fname in sorted(os.listdir(QUERIES_FOLDER)):
-    if fname.endswith(".json"):
-        with open(os.path.join(QUERIES_FOLDER, fname), "r", encoding="utf-8") as f:
+# --- Helpers ---
+fernet = Fernet(SAP_DATA_KEY.encode())
+
+def decrypt_value(value: str) -> str:
+    if not value:
+        return ""
+    return fernet.decrypt(value.encode()).decode()
+
+def load_queries() -> list[dict]:
+    queries = []
+    for fname in sorted(os.listdir(QUERIES_FOLDER)):
+        if not fname.endswith(".json"):
+            continue
+        with open(QUERIES_FOLDER / fname, "r", encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, dict) and "sections" in data:
             for section in data.get("sections", []):
@@ -35,118 +67,134 @@ for fname in sorted(os.listdir(QUERIES_FOLDER)):
             queries.extend([{"query": q} for q in data])
         elif isinstance(data, dict) and "query" in data:
             queries.append({"query": data["query"]})
+    return queries
 
-print(f"Loaded {len(queries)} queries\n")
-
-# --- Run pipeline for each query ---
-system_content = get_prompt_template('SYS_PROMPT')
-conversation_id = 777
-user_id = 'dev_testing_ipynb'
-
-config = Config()
-os.environ["LANGFUSE_PUBLIC_KEY"] = config.get('tracing','LANGFUSE_PUBLIC_KEY')
-os.environ["LANGFUSE_SECRET_KEY"] = config.get('tracing','LANGFUSE_SECRET_KEY')
-os.environ["LANGFUSE_HOST"] = config.get('tracing','LANGFUSE_HOST')
-lf = get_client()
-
-az_openai_client = AzureOpenAI(
-    api_key=config.config['AZURE_OPENAI_API_KEY'],
-    api_version=config.get('models','AZURE_OPENAI_API_VERSION'),
-    azure_endpoint=config.get('models','AZURE_OPENAI_ENDPOINT'),
-)
-
-results = []
-
-for item in queries:
-    query = item["query"]
-    print(f"[{item.get('policy_source','')} | {item.get('section','')} | Q{item.get('question_number','')}]")
-    print(f"Q: {query}")
-    with lf.start_as_current_observation(as_type="span", name="QnA") as start_trace:
-
-        events = list(llm_core.run_conversation_core(
-            messages={"messages":[{"role": "system", "content": system_content}, {"role": "user", "content": query}]},
-            system_content=system_content,
-        ))
-
-        completion_text = ''
-        for event in events:
-            if event[0] == "chunk":
-                completion_text += event[1]
-            elif event[0] == "done":
-                _, trace_metric_list, doc_dict, retrieval_list = event[1:]
-            else:
-                required_sap_fields = event
-
-        start_trace.update_trace(
-            input=query,
-            output=completion_text,
-            session_id=f"cnv-{conversation_id}",
-            user_id=user_id
-        )
-        lf.flush()
-
-    results.append({
-        **item,
-        "completion_text": completion_text,
-        "retrieval_list": retrieval_list,
-        "trace_metric_list": trace_metric_list,
-        "doc_dict": doc_dict,
+def fetch_user_data(required_sap_fields: list[str]) -> dict:
+    payload = json.dumps({
+        "query": USERNAME,
+        "searchType": "vector",
+        "vector": {
+            "kind": "vector",
+            "fields": "user_name_vector",
+            "k": 3,
+            "exhaustive": True,
+        },
+        "$select": "user_name, " + ", ".join(required_sap_fields),
+        "top": 1
     })
-    print(f"A: {completion_text}\n{'-'*60}\n")
+    response = requests.post(SAP_URL, headers=SAP_HEADERS, data=payload)
+    if response.status_code != 200:
+        print(f"SAP search error {response.status_code}: {response.text}")
+        return {}
 
-# --- Save Q&A results to answered/ folder ---
-answered = [
-    {
-        "policy_source": r.get("policy_source", ""),
-        "section": r.get("section", ""),
-        "question_number": r.get("question_number"),
-        "question": r["query"],
-        "answer": r["completion_text"],
-    }
-    for r in results
-]
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-out_path = os.path.join(ANSWERED_FOLDER, f"answers_{timestamp}.json")
-with open(out_path, "w", encoding="utf-8") as f:
-    json.dump(answered, f, ensure_ascii=False, indent=2)
-print(f"Saved {len(answered)} answers → {out_path}")
+    result = response.json().get("value", [])
+    if not result:
+        return {}
 
-# Expose last query's variables for downstream cells
-query = results[-1]["query"]
-completion_text = results[-1]["completion_text"]
-retrieval_list = results[-1]["retrieval_list"]
-trace_metric_list = results[-1]["trace_metric_list"]
-doc_dict = results[-1]["doc_dict"]
+    raw = result[0]
+    fields_to_decrypt = ["user_name"] + required_sap_fields
+    return {f: decrypt_value(raw.get(f, "")) for f in fields_to_decrypt}
 
-# Match user_name only
-username = "ESP567E"
+def run_pipeline(query: str, system_content: str, az_openai_client, lf, start_trace) -> str:
+    # Step 1 — Generate draft + retrieve chunks
+    events = list(llm_core.run_conversation_core(
+        messages={"messages": [
+            {"role": "system", "content": system_content},
+            {"role": "user",   "content": query}
+        ]},
+        system_content=system_content,
+    ))
 
-headers = {
-    'Content-Type': 'application/json',
-    'model': 'openai',
-    'subModel': 'text-embedding-3-large',
-    'client-id': 'a3f7b27d767940f8be5f72779912fe03',
-    'client-secret': '2366CCd77d964e82831f5E251678C0Cf',
-    'project': 'HRBuddy',
-    'vector-index': 'spl_hr_buddy_sap'
-}
-payload = json.dumps({
-    "query": username,
-    "searchType": "vector",
-    "vector": {
-        "kind": "vector",
-        "fields": "user_name_vector",
-        "k": 3,
-        "exhaustive": True,
-    },
-    "$select": "user_name",
-    "top": 1
-})
-response = requests.request("POST", url, headers=headers, data=payload)
+    completion_text = ""
+    retrieval_list  = []
+    trace_metric_list = {}
+    for event in events:
+        if event[0] == "chunk":
+            completion_text += event[1]
+        elif event[0] == "done":
+            _, trace_metric_list, doc_dict, retrieval_list = event[1:]
 
-if response.status_code != 200:
-    print("error {}".format(response.status_code))
-    print(response.text)
+    # Step 2 — Identify required SAP fields from policy chunks
+    required_sap_fields = llm_core.identify_required_personalization_fields(
+        az_openai_client=az_openai_client,
+        model_name="gpt-4o",
+        retrieval_list=retrieval_list,
+        start_trace=start_trace,
+    )
+    if isinstance(required_sap_fields, str):
+        required_sap_fields = ast.literal_eval(required_sap_fields)
 
-matched_user_name = response.json()['value'][0]['user_name']
-print(f"Matched user_name: {matched_user_name}")
+    # Step 3 — Fetch + decrypt employee data from SAP
+    employee_data = {}
+    if required_sap_fields:
+        employee_data = fetch_user_data(required_sap_fields)
+
+    # Step 4 — Personalize response
+    if employee_data:
+        personalized_text = llm_core.personalize_response(
+            az_openai_client=az_openai_client,
+            model_name="gpt-4o",
+            query=query,
+            retrieval_list=retrieval_list,
+            employee_data=employee_data,
+            start_trace=start_trace,
+        )
+    else:
+        personalized_text = completion_text
+
+    return personalized_text
+
+
+def main():
+    config = Config()
+    os.environ["LANGFUSE_PUBLIC_KEY"] = config.get('tracing', 'LANGFUSE_PUBLIC_KEY')
+    os.environ["LANGFUSE_SECRET_KEY"] = config.get('tracing', 'LANGFUSE_SECRET_KEY')
+    os.environ["LANGFUSE_HOST"]       = config.get('tracing', 'LANGFUSE_HOST')
+
+    lf = get_client()
+    system_content = get_prompt_template('SYS_PROMPT')
+
+    az_openai_client = AzureOpenAI(
+        api_key=config.config['AZURE_OPENAI_API_KEY'],
+        api_version=config.get('models', 'AZURE_OPENAI_API_VERSION'),
+        azure_endpoint=config.get('models', 'AZURE_OPENAI_ENDPOINT'),
+    )
+
+    queries = load_queries()
+    print(f"Loaded {len(queries)} queries\n")
+
+    answered = []
+
+    for item in queries:
+        query = item["query"]
+        print(f"[{item.get('policy_source','')} | {item.get('section','')} | Q{item.get('question_number','')}]")
+        print(f"Q: {query}")
+
+        with lf.start_as_current_observation(as_type="span", name="QnA") as start_trace:
+            personalized_text = run_pipeline(query, system_content, az_openai_client, lf, start_trace)
+            start_trace.update_trace(
+                input=query,
+                output=personalized_text,
+                user_id='pipeline',
+            )
+            lf.flush()
+
+        print(f"A: {personalized_text}\n{'-'*60}\n")
+
+        answered.append({
+            "policy_source":   item.get("policy_source", ""),
+            "section":         item.get("section", ""),
+            "question_number": item.get("question_number"),
+            "question":        query,
+            "answer":          personalized_text,
+        })
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = ANSWERED_FOLDER / f"answers_{timestamp}.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(answered, f, ensure_ascii=False, indent=2)
+    print(f"\nSaved {len(answered)} answers → {out_path}")
+
+
+if __name__ == "__main__":
+    main()
