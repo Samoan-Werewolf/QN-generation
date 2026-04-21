@@ -1,0 +1,11 @@
+[
+  {
+    "chunk_index": 0,
+    "section": "",
+    "content": "Employee\nHandbook:\n**SECTION A – APPOINTMENT**  \nApplies to: All Employees of SP Group  \nApproved by: Chief Human Resource Officer  \n|Version|Revision<br>Date|Effective<br>Date|Area of Change|\n|---|---|---|---|\n|1.0|Oct 95|Oct 95|- <br>|\n|2.0|Feb 21|Feb 21|• Employee Referral Programme<br>|\n|3.0|Aug 23|Aug 23|• Terms of Appointment<br>• Employee Referral Programme<br>• Local Scholarships<br>|\n|4.0|Jul 25|Jul 25|• Appointment<br>• Approval authorities for<br>Recruitment<br>• Re-employment upon Statutory<br>Retirement|",
+    "metadata": {
+      "source": "Appointment.pdf",
+      "link": "Appointment%2Epdf"
+    },
+    "context": "This chunk provides an overview of the revision history and scope of **SECTION A – APPOINTMENT** in the SP Group Employee Handbook, detailing updates to policies on appointment, recruitment, employee referral programs, local scholarships, and re-employment upon statutory retirement."
+  },
