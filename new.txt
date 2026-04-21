@@ -1,314 +1,152 @@
-from flask import Flask, render_template, request, jsonify, send_file, abort
-from openai import AzureOpenAI, BadRequestError
-from dotenv import load_dotenv
-import json
-import re
-import os
-import time
-import zipfile
-import io
-from pathlib import Path
+import server.chat.llm_core as llm_core
+from server.model_source.config import Config
+from openai import AzureOpenAI
+from langfuse import get_client
+from server.model_source.modules.prompts import get_prompt_template
+from datetime import datetime
 
-load_dotenv()
+import server.model_source.dcc_ai_search_json as dcc_ai_search_json
 
-app = Flask(__name__)
+import importlib
+importlib.reload(llm_core)
+importlib.reload(dcc_ai_search_json)
 
-# ── CONFIG ─────────────────────────────────────────────
-BASE_DIR      = Path(__file__).resolve().parent
-INPUT_DIR     = BASE_DIR / "Output_folder"
-OUTPUT_DIR    = BASE_DIR / "questions"
+# --- Load queries from JSON files in input_queries/ folder ---
+QUERIES_FOLDER = os.path.join(os.path.dirname(os.path.abspath("__file__")), "input_queries")
+ANSWERED_FOLDER = os.path.join(os.path.dirname(os.path.abspath("__file__")), "answered")
+os.makedirs(ANSWERED_FOLDER, exist_ok=True)
 
-AZURE_ENDPOINT       = os.getenv("AZURE_OPENAI_ENDPOINT")       # e.g. https://your-resource.openai.azure.com/
-AZURE_API_KEY        = os.getenv("AZURE_OPENAI_API_KEY")
-AZURE_API_VERSION    = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
-AZURE_DEPLOYMENT     = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+queries = []
+for fname in sorted(os.listdir(QUERIES_FOLDER)):
+    if fname.endswith(".json"):
+        with open(os.path.join(QUERIES_FOLDER, fname), "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict) and "sections" in data:
+            for section in data.get("sections", []):
+                for qa in section.get("qa_pairs", []):
+                    if "question" in qa:
+                        queries.append({
+                            "query": qa["question"],
+                            "question_number": qa.get("question_number"),
+                            "section": section.get("section", ""),
+                            "policy_source": data.get("policy_source", ""),
+                        })
+        elif isinstance(data, list):
+            queries.extend([{"query": q} for q in data])
+        elif isinstance(data, dict) and "query" in data:
+            queries.append({"query": data["query"]})
 
-QUESTIONS_PER_CHUNK = 5
-# ───────────────────────────────────────────────────────
+print(f"Loaded {len(queries)} queries\n")
 
-HR_QA_PROMPT = """
-You are an HR assistant helping employees understand the company's HR Policies.
+# --- Run pipeline for each query ---
+system_content = get_prompt_template('SYS_PROMPT')
+conversation_id = 777
+user_id = 'dev_testing_ipynb'
 
-Below is ONE section of the HR policy document titled "{section_title}":
+config = Config()
+os.environ["LANGFUSE_PUBLIC_KEY"] = config.get('tracing','LANGFUSE_PUBLIC_KEY')
+os.environ["LANGFUSE_SECRET_KEY"] = config.get('tracing','LANGFUSE_SECRET_KEY')
+os.environ["LANGFUSE_HOST"] = config.get('tracing','LANGFUSE_HOST')
+lf = get_client()
 
----
-{section_content}
----
+az_openai_client = AzureOpenAI(
+    api_key=config.config['AZURE_OPENAI_API_KEY'],
+    api_version=config.get('models','AZURE_OPENAI_API_VERSION'),
+    azure_endpoint=config.get('models','AZURE_OPENAI_ENDPOINT'),
+)
 
-A new employee has just joined and wants to understand this section.
+results = []
 
-Your task:
-Generate exactly {n} clear, practical questions that an employee might commonly ask about THIS section
+for item in queries:
+    query = item["query"]
+    print(f"[{item.get('policy_source','')} | {item.get('section','')} | Q{item.get('question_number','')}]")
+    print(f"Q: {query}")
+    with lf.start_as_current_observation(as_type="span", name="QnA") as start_trace:
 
-Respond ONLY with a valid JSON array. No preamble, no explanation, no markdown fences.
-The JSON must follow this exact structure:
+        events = list(llm_core.run_conversation_core(
+            messages={"messages":[{"role": "system", "content": system_content}, {"role": "user", "content": query}]},
+            system_content=system_content,
+        ))
 
-[
-  {{
-    "question_number": 1,
-    "question": "The employee's question here"
-  }}
-]
-""".strip()
+        completion_text = ''
+        for event in events:
+            if event[0] == "chunk":
+                completion_text += event[1]
+            elif event[0] == "done":
+                _, trace_metric_list, doc_dict, retrieval_list = event[1:]
+            else:
+                required_sap_fields = event
 
+        start_trace.update_trace(
+            input=query,
+            output=completion_text,
+            session_id=f"cnv-{conversation_id}",
+            user_id=user_id
+        )
+        lf.flush()
 
-# ── AZURE OPENAI ────────────────────────────────────────
+    results.append({
+        **item,
+        "completion_text": completion_text,
+        "retrieval_list": retrieval_list,
+        "trace_metric_list": trace_metric_list,
+        "doc_dict": doc_dict,
+    })
+    print(f"A: {completion_text}\n{'-'*60}\n")
 
-def get_client() -> AzureOpenAI:
-    if not AZURE_ENDPOINT or not AZURE_API_KEY:
-        raise RuntimeError("Azure credentials missing. Check your .env file.")
-    return AzureOpenAI(
-        azure_endpoint=AZURE_ENDPOINT,
-        api_key=AZURE_API_KEY,
-        api_version=AZURE_API_VERSION,
-    )
-
-
-def call_azure(prompt: str) -> str:
-    client = get_client()
-    response = client.chat.completions.create(
-        model=AZURE_DEPLOYMENT,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=2000,
-    )
-    return response.choices[0].message.content.strip()
-
-
-def parse_json_response(raw: str) -> list[dict]:
-    """Strip markdown fences, fix common model JSON typos, then parse."""
-    clean = raw.strip()
-
-    if clean.startswith("```"):
-        clean = clean.split("```")[1]
-        if clean.startswith("json"):
-            clean = clean[4:]
-        clean = clean.strip()
-
-    clean = re.sub(r'\\([^\"\\\/bfnrtu])', r'\1', clean)
-    clean = re.sub(r':\s*(\d+)"', r': \1', clean)
-    clean = re.sub(r',\s*([}\]])', r'\1', clean)
-
-    open_braces = clean.count('{') - clean.count('}')
-    if open_braces > 0:
-        clean = clean.rstrip(',\n ') + ('}' * open_braces)
-    if not clean.rstrip().endswith(']'):
-        clean = clean.rstrip() + ']'
-
-    return json.loads(clean)
-
-
-# ── Q&A GENERATION ─────────────────────────────────────
-
-def generate_qa_for_chunk(chunk: dict, n: int, dry_run: bool) -> list[dict]:
-    if dry_run:
-        return [
-            {
-                "question_number": i,
-                "question": f"[DRY RUN] Sample question {i} for '{chunk['title']}'",
-            }
-            for i in range(1, n + 1)
-        ]
-
-    prompt = HR_QA_PROMPT.format(
-        section_title   = chunk["title"],
-        section_content = chunk["content"][:3000],
-        n               = n,
-    )
-    raw = call_azure(prompt)
-
-    try:
-        qa_list = parse_json_response(raw)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Model did not return valid JSON for section '{chunk['title']}': {e}\n\nRaw:\n{raw}")
-
-    if not isinstance(qa_list, list) or len(qa_list) == 0:
-        raise ValueError(f"Empty or invalid Q&A list for section '{chunk['title']}'.")
-
-    return qa_list
-
-
-def load_chunks(json_path: Path) -> list[dict]:
-    """
-    Load pre-built chunks from a JSON file in Output_folder.
-    Accepts either a plain list or a dict with a 'chunks' key.
-
-    Normalises each chunk into {"title": ..., "content": ...}:
-    - title : chunk["section"] if non-empty, otherwise
-              chunk["title"]   if present, otherwise
-              "Section <chunk_index + 1>"
-    - content: chunk["content"] optionally prefixed with
-               chunk["context"] if present, for richer model input.
-    """
-    raw = json.loads(json_path.read_text(encoding="utf-8"))
-
-    if isinstance(raw, list):
-        chunks = raw
-    elif isinstance(raw, dict):
-        chunks = raw.get("chunks", [])
-    else:
-        raise ValueError(f"'{json_path.name}': expected a JSON list or object with a 'chunks' key.")
-
-    normalised = []
-    for i, chunk in enumerate(chunks):
-        if "content" not in chunk:
-            raise ValueError(f"'{json_path.name}': chunk {i} is missing 'content'.")
-
-        # Derive a meaningful title
-        title = (
-            chunk.get("section")
-            or chunk.get("title")
-            or f"Section {chunk.get('chunk_index', i) + 1}"
-        ).strip()
-
-        # Prepend context summary when available so the model has full background
-        content = chunk["content"]
-        if chunk.get("context"):
-            content = f"Context: {chunk['context']}\n\n{content}"
-
-        normalised.append({"title": title, "content": content})
-
-    return normalised
-
-
-def process_file(json_path: Path, n: int, dry_run: bool) -> dict:
-    chunks = load_chunks(json_path)
-
-    if not chunks:
-        return None
-
-    sections = []
-    for chunk in chunks:
-        try:
-            qa_list = generate_qa_for_chunk(chunk, n=n, dry_run=dry_run)
-            sections.append({
-                "section":        chunk["title"],
-                "question_count": len(qa_list),
-                "qa_pairs":       qa_list,
-            })
-        except BadRequestError as e:
-            # Content policy / guardrail violation — record empty entry and continue
-            sections.append({
-                "section":        chunk["title"],
-                "question_count": 0,
-                "qa_pairs":       [],
-                "skipped_reason": f"Content filter: {e.message}",
-            })
-        except ValueError as e:
-            # Bad model output for this chunk — record empty entry and continue
-            sections.append({
-                "section":        chunk["title"],
-                "question_count": 0,
-                "qa_pairs":       [],
-                "skipped_reason": str(e),
-            })
-        time.sleep(0.3)
-
-    return {
-        "policy_source":   json_path.name,
-        "generated_at":    time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "total_sections":  len(sections),
-        "total_questions": sum(s["question_count"] for s in sections),
-        "sections":        sections,
+# --- Save Q&A results to answered/ folder ---
+answered = [
+    {
+        "policy_source": r.get("policy_source", ""),
+        "section": r.get("section", ""),
+        "question_number": r.get("question_number"),
+        "question": r["query"],
+        "answer": r["completion_text"],
     }
+    for r in results
+]
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+out_path = os.path.join(ANSWERED_FOLDER, f"answers_{timestamp}.json")
+with open(out_path, "w", encoding="utf-8") as f:
+    json.dump(answered, f, ensure_ascii=False, indent=2)
+print(f"Saved {len(answered)} answers → {out_path}")
 
+# Expose last query's variables for downstream cells
+query = results[-1]["query"]
+completion_text = results[-1]["completion_text"]
+retrieval_list = results[-1]["retrieval_list"]
+trace_metric_list = results[-1]["trace_metric_list"]
+doc_dict = results[-1]["doc_dict"]
 
-# ── ROUTES ─────────────────────────────────────────────
+# Match user_name only
+username = "ESP567E"
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+headers = {
+    'Content-Type': 'application/json',
+    'model': 'openai',
+    'subModel': 'text-embedding-3-large',
+    'client-id': 'a3f7b27d767940f8be5f72779912fe03',
+    'client-secret': '2366CCd77d964e82831f5E251678C0Cf',
+    'project': 'HRBuddy',
+    'vector-index': 'spl_hr_buddy_sap'
+}
+payload = json.dumps({
+    "query": username,
+    "searchType": "vector",
+    "vector": {
+        "kind": "vector",
+        "fields": "user_name_vector",
+        "k": 3,
+        "exhaustive": True,
+    },
+    "$select": "user_name",
+    "top": 1
+})
+response = requests.request("POST", url, headers=headers, data=payload)
 
+if response.status_code != 200:
+    print("error {}".format(response.status_code))
+    print(response.text)
 
-@app.route("/health")
-def health():
-    try:
-        get_client()
-        return jsonify({"ok": True, "message": "Azure OpenAI credentials loaded"})
-    except RuntimeError as e:
-        return jsonify({"ok": False, "message": str(e)}), 500
-
-
-@app.route("/run", methods=["POST"])
-def run():
-    try:
-        data    = request.get_json(silent=True) or {}
-        dry_run = data.get("dry_run", False)
-        n       = int(data.get("questions_per_chunk", QUESTIONS_PER_CHUNK))
-
-        if not INPUT_DIR.exists():
-            return jsonify({"ok": False, "message": f"Input folder not found: '{INPUT_DIR}'."}), 400
-
-        json_files = sorted(INPUT_DIR.glob("*.json"))
-        if not json_files:
-            return jsonify({"ok": False, "message": f"No .json files found in '{INPUT_DIR}'."}), 400
-
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-        summary = []
-        for json_path in json_files:
-            output = process_file(json_path, n=n, dry_run=dry_run)
-
-            if output is None:
-                summary.append({"file": json_path.name, "status": "skipped", "reason": "No chunks found"})
-                continue
-
-            out_path = OUTPUT_DIR / (json_path.stem + "_doc.json")
-            out_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
-
-            summary.append({
-                "file":            json_path.name,
-                "status":          "ok",
-                "output":          out_path.name,
-                "total_sections":  output["total_sections"],
-                "total_questions": output["total_questions"],
-            })
-
-        return jsonify({
-            "ok":              True,
-            "files_found":     len(json_files),
-            "files_processed": sum(1 for s in summary if s["status"] == "ok"),
-            "output_folder":   str(OUTPUT_DIR),
-            "summary":         summary,
-        })
-
-    except (ValueError, RuntimeError) as e:
-        return jsonify({"ok": False, "message": str(e)}), 400
-    except Exception as e:
-        return jsonify({"ok": False, "message": str(e)}), 500
-
-
-@app.route("/download/<filename>")
-def download(filename):
-    out_path = OUTPUT_DIR / filename
-    if not out_path.exists() or out_path.suffix != ".json":
-        abort(404)
-    return send_file(out_path, as_attachment=True, mimetype="application/json")
-
-
-@app.route("/download_all")
-def download_all():
-    json_files = list(OUTPUT_DIR.glob("*.json"))
-    if not json_files:
-        return "No JSON files generated yet. Please call /run first.", 404
-
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for f in json_files:
-            zf.write(f, f.name)
-    buf.seek(0)
-
-    return send_file(buf, as_attachment=True, download_name="hr_policy_qa_all.zip", mimetype="application/zip")
-
-
-@app.route("/list")
-def list_outputs():
-    if not OUTPUT_DIR.exists():
-        return jsonify({"ok": True, "files": []})
-    files = [f.name for f in sorted(OUTPUT_DIR.glob("*.json"))]
-    return jsonify({"ok": True, "output_folder": str(OUTPUT_DIR), "files": files})
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
-    #fff
+matched_user_name = response.json()['value'][0]['user_name']
+print(f"Matched user_name: {matched_user_name}")
