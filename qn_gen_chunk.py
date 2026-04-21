@@ -132,7 +132,13 @@ def load_chunks(json_path: Path) -> list[dict]:
     """
     Load pre-built chunks from a JSON file in Output_folder.
     Accepts either a plain list or a dict with a 'chunks' key.
-    Each chunk must have 'title' and 'content' keys.
+
+    Normalises each chunk into {"title": ..., "content": ...}:
+    - title : chunk["section"] if non-empty, otherwise
+              chunk["title"]   if present, otherwise
+              "Section <chunk_index + 1>"
+    - content: chunk["content"] optionally prefixed with
+               chunk["context"] if present, for richer model input.
     """
     raw = json.loads(json_path.read_text(encoding="utf-8"))
 
@@ -143,11 +149,26 @@ def load_chunks(json_path: Path) -> list[dict]:
     else:
         raise ValueError(f"'{json_path.name}': expected a JSON list or object with a 'chunks' key.")
 
+    normalised = []
     for i, chunk in enumerate(chunks):
-        if "title" not in chunk or "content" not in chunk:
-            raise ValueError(f"'{json_path.name}': chunk {i} is missing 'title' or 'content'.")
+        if "content" not in chunk:
+            raise ValueError(f"'{json_path.name}': chunk {i} is missing 'content'.")
 
-    return chunks
+        # Derive a meaningful title
+        title = (
+            chunk.get("section")
+            or chunk.get("title")
+            or f"Section {chunk.get('chunk_index', i) + 1}"
+        ).strip()
+
+        # Prepend context summary when available so the model has full background
+        content = chunk["content"]
+        if chunk.get("context"):
+            content = f"Context: {chunk['context']}\n\n{content}"
+
+        normalised.append({"title": title, "content": content})
+
+    return normalised
 
 
 def process_file(json_path: Path, n: int, dry_run: bool) -> dict:
