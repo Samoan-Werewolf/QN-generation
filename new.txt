@@ -1,226 +1,480 @@
 import sys
+
+# If run on local, manually add iSPoTS into sys temporary path
+sys.path.append("/Users/pths2948/iSPoTS/src")
+
+%load_ext autoreload
+%autoreload 2
+
 import os
-import json
-import ast
-import requests
-from datetime import datetime
-from pathlib import Path
-from cryptography.fernet import Fernet
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+import pandas as pd
+import glob
+import datetime as dt
+import matplotlib.pyplot as plt
+from ispots.anomaly_detector import AutoAD, Preprocessor
+import dateutil
 
-TIMEOUT_SECONDS = 60
+for k in data_dict.keys():
+    print(repr(k))
 
-# --- Path setup ---
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
-sys.path.insert(0, str(PROJECT_ROOT / "src" / "server"))
+# load data into a dictionary
+path = os.path.abspath("./data")
+csv_files = glob.glob(os.path.join(path, "testing", "HalfHourlyConsumption_HTA_2025-06-01_2025-07-01.csv"))
 
-import server.chat.llm_core as llm_core
-from server.model_source.config import Config
-from openai import AzureOpenAI
-from langfuse import get_client
-from server.model_source.modules.prompts import get_prompt_template
+pre_data_dict = {}
+print("csv_files:", csv_files)
 
-# --- Fixed config ---
-USERNAME        = "ESP567E"
-SAP_URL         = "https://ai-gateway.qa.in.spdigital.sg/ai-search"
-SAP_DATA_KEY    = "ctWsiFNflfxvD4MWvVt0CqKKs0mYr1SWYe4kk-GV9Oo="
+for f in csv_files:
+    df = pd.read_csv(f)
+    df = df.rename(columns={"Date": "Time", "HTA (kWh)": "Value"})
+    pre_data_dict[os.path.basename(f)[:-4]] = df
 
-BASE_DIR        = Path(__file__).resolve().parent
-QUERIES_FOLDER  = BASE_DIR / "input_queries"
-ANSWERED_FOLDER = BASE_DIR / "answered"
-ANSWERED_FOLDER.mkdir(exist_ok=True)
+    print("Columns:", df.columns.tolist())
+    print(df.head())
 
-SAP_HEADERS = {
-    'Content-Type': 'application/json',
-    'model': 'openai',
-    'subModel': 'text-embedding-3-large',
-    'client-id': 'a3f7b27d767940f8be5f72779912fe03',
-    'client-secret': '2366CCd77d964e82831f5E251678C0Cf',
-    'project': 'HRBuddy',
-    'vector-index': 'spl_hr_buddy_sap'
-}
+    # Convert Date column properly
+    df["Time"] = pd.to_datetime(df["Time"], errors="coerce")
+    df = df.dropna(subset=["Time"])
+    #df = df.set_index("Date")
 
-# --- Helpers ---
-fernet = Fernet(SAP_DATA_KEY.encode())
+    # Optional: localize timezone only if needed
+    # df.index = df.index.tz_localize("Asia/Singapore")
 
-def decrypt_value(value: str) -> str:
-    if not value:
-        return ""
-    return fernet.decrypt(value.encode()).decode()
+    key = os.path.basename(f)[:-4]
+    pre_data_dict[key] = df
 
-def load_queries() -> list[dict]:
-    queries = []
-    for fname in sorted(os.listdir(QUERIES_FOLDER)):
-        if not fname.endswith(".json"):
-            continue
-        with open(QUERIES_FOLDER / fname, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        if isinstance(data, dict) and "sections" in data:
-            for section in data.get("sections", []):
-                for qa in section.get("qa_pairs", []):
-                    if "question" in qa:
-                        queries.append({
-                            "query": qa["question"],
-                            "question_number": qa.get("question_number"),
-                            "section": section.get("section", ""),
-                            "policy_source": data.get("policy_source", ""),
-                        })
-        elif isinstance(data, list):
-            queries.extend([{"query": q} for q in data])
-        elif isinstance(data, dict) and "query" in data:
-            queries.append({"query": data["query"]})
-    return queries
+print("pre_data_dict keys:", list(pre_data_dict.keys()))
 
-def fetch_user_data(required_sap_fields: list[str]) -> dict:
-    payload = json.dumps({
-        "query": USERNAME,
-        "searchType": "vector",
-        "vector": {
-            "kind": "vector",
-            "fields": "user_name_vector",
-            "k": 3,
-            "exhaustive": True,
-        },
-        "$select": "user_name, " + ", ".join(required_sap_fields),
-        "top": 1
-    })
-    response = requests.post(SAP_URL, headers=SAP_HEADERS, data=payload)
-    if response.status_code != 200:
-        print(f"SAP search error {response.status_code}: {response.text}")
-        return {}
+# preprocess data
+preprocessor = Preprocessor(pre_data_dict, miss_val_threshold=0.01)
+data_dict = preprocessor.preprocess()
 
-    result = response.json().get("value", [])
-    if not result:
-        return {}
+print("data_dict keys:", list(data_dict.keys()))
 
-    raw = result[0]
-    fields_to_decrypt = ["user_name"] + required_sap_fields
-    return {f: decrypt_value(raw.get(f, "")) for f in fields_to_decrypt}
+measuring_point = "HalfHourlyConsumption_HTA_2025-06-01_2025-07-01"
+data_dict_temp = {measuring_point: data_dict[measuring_point]}
 
-def run_pipeline(query: str, system_content: str, az_openai_client, lf, start_trace) -> str:
-    # Step 1 — Generate draft + retrieve chunks
-    events = list(llm_core.run_conversation_core(
-        messages={"messages": [
-            {"role": "system", "content": system_content},
-            {"role": "user",   "content": query}
-        ]},
-        system_content=system_content,
-    ))
+tz = data_dict_temp[measuring_point].index[0].tz
+print("tz:", tz)
 
-    completion_text = ""
-    retrieval_list  = []
-    trace_metric_list = {}
-    for event in events:
-        if event[0] == "chunk":
-            completion_text += event[1]
-        elif event[0] == "done":
-            _, trace_metric_list, doc_dict, retrieval_list = event[1:]
+# statistic method
+anomalies_detected_dates = []
 
-    # Step 2 — Identify required SAP fields from policy chunks
-    required_sap_fields = llm_core.identify_required_personalization_fields(
-        az_openai_client=az_openai_client,
-        model_name="gpt-4o",
-        retrieval_list=retrieval_list,
-        start_trace=start_trace,
+ad_detector = AutoAD(
+    namespace="dsta-be28",
+    data_frequency=preprocessor.data_frequency,
+    method="statistic",
+    unit_of_measurement="Wh",
+    lookback_period=7
+)
+
+detection_date = pd.Timestamp("2025-06-17")
+end_date = pd.Timestamp("2025-06-17")
+
+if tz is not None:
+    detection_date = detection_date.tz_localize(tz)
+    end_date = end_date.tz_localize(tz)
+
+start_date = data_dict_temp[measuring_point].index.min()
+print("data starts at:", start_date)
+
+required_start = detection_date - pd.Timedelta(days=ad_detector.lookback_period)
+print("required history starts at:", required_start)
+
+if required_start < start_date:
+    raise ValueError(
+        f"Not enough data for lookback period={ad_detector.lookback_period}. "
+        f"Need data from {required_start}, but only have data from {start_date}."
     )
-    if isinstance(required_sap_fields, str):
-        required_sap_fields = ast.literal_eval(required_sap_fields)
 
-    # Step 3 — Fetch + decrypt employee data from SAP
-    employee_data = {}
-    if required_sap_fields:
-        employee_data = fetch_user_data(required_sap_fields)
+while detection_date <= end_date:
+    score_df_dict = ad_detector.detect(
+        data_dict=data_dict_temp,
+        detect_date=detection_date
+    )
+    ad_detector.top_k(
+        k=1,
+        sort_by="deviation_percentage",
+        report=True,
+        plot=True,
+        dev_perc_threshold=5
+    )
+    detection_date += pd.Timedelta(1, unit="d")
+    
+    
+    
+    
+# load data into a dictionary
+path = os.path.abspath('./data/JC/electrical')
+csv_files = glob.glob(os.path.join(path, "*.csv"))
+pre_data_dict = {}
+for f in csv_files:
+    df = pd.read_csv(f)
+    pre_data_dict[f.split("/")[-1][:-4]] = df
 
-    # Step 4 — Personalize response
-    if employee_data:
-        personalized_text = llm_core.personalize_response(
-            az_openai_client=az_openai_client,
-            model_name="gpt-4o",
-            query=query,
-            retrieval_list=retrieval_list,
-            employee_data=employee_data,
-            start_trace=start_trace,
+# preprocess data
+preprocessor = Preprocessor(pre_data_dict, miss_val_threshold = 0.01)
+data_dict = preprocessor.preprocess()
+
+measuring_point = 'dsta_blk-210-1-elect'
+data_dict_temp = {measuring_point: data_dict[measuring_point]}
+
+# statistic method
+anomalies_detected_dates = []
+
+ad_detector = AutoAD(namespace = 'JC', data_frequency = preprocessor.data_frequency, method = 'statistic', unit_of_measurement='Wh', lookback_period=60)
+
+detection_date = pd.to_datetime('2022-11-01')
+while detection_date <= pd.to_datetime('2022-11-13'):
+    score_df_dict = ad_detector.detect(data_dict = data_dict_temp, detect_date = detection_date)
+    ad_detector.top_k(k = 1, sort_by = 'deviation_percentage', report = True, plot = True, dev_perc_threshold = 5)
+    if ad_detector.count > 0:
+        anomalies_detected_dates.append(detection_date)
+    detection_date += pd.Timedelta(1, unit='d')
+    
+
+
+# load data into a dictionary
+path = os.path.abspath("./data")
+csv_files = glob.glob(os.path.join(path, "testing", "HalfHourlyConsumption_HTA_2025-06-01_2025-07-01.csv"))
+pre_data_dict = {}
+
+%matplotlib inline
+import matplotlib.pyplot as plt
+print("csv files found:", len(csv_files))
+
+for f in csv_files:
+    df = pd.read_csv(f)
+    print(f"\nLoading: {os.path.basename(f)}")
+    print("Original columns:", df.columns.tolist())
+
+    # ---- normalize column names to what Preprocessor expects ----
+    # adjust these mappings if your files use different names
+    rename_map = {}
+
+    if "Date" in df.columns:
+        rename_map["Date"] = "Time"
+    elif "Datetime" in df.columns:
+        rename_map["Datetime"] = "Time"
+    elif "Timestamp" in df.columns:
+        rename_map["Timestamp"] = "Time"
+
+    if "Value" not in df.columns:
+        # pick the first non-time column as Value if needed
+        non_time_cols = [c for c in df.columns if c not in ["Date", "Datetime", "Timestamp", "Time"]]
+        if len(non_time_cols) == 1:
+            rename_map[non_time_cols[0]] = "Value"
+
+    df = df.rename(columns=rename_map)
+
+    if "Time" not in df.columns or "Value" not in df.columns:
+        print(f"Skipping {os.path.basename(f)}: could not identify Time/Value columns")
+        continue
+
+    df["Time"] = pd.to_datetime(df["Time"], errors="coerce")
+    df["Value"] = pd.to_numeric(df["Value"], errors="coerce")
+    df = df.dropna(subset=["Time"])
+
+    key = os.path.basename(f)[:-4]
+    pre_data_dict[key] = df[["Time", "Value"]]
+
+print("\npre_data_dict keys:", list(pre_data_dict.keys()))
+
+# preprocess data
+preprocessor = Preprocessor(pre_data_dict, miss_val_threshold=0.01)
+data_dict = preprocessor.preprocess()
+
+print("processed keys:", list(data_dict.keys()))
+
+measuring_point = "HalfHourlyConsumption_HTA_2025-06-01_2025-07-01"
+
+if measuring_point not in data_dict:
+    raise KeyError(
+        f"{measuring_point!r} not found in processed data_dict. "
+        f"Available keys: {list(data_dict.keys())}"
+    )
+
+data_dict_temp = {measuring_point: data_dict[measuring_point]}
+mp_df = data_dict_temp[measuring_point]
+
+if mp_df.empty:
+    raise ValueError(f"{measuring_point!r} is empty after preprocessing.")
+
+print(f"\n{measuring_point} shape:", mp_df.shape)
+print("index range:", mp_df.index.min(), "to", mp_df.index.max())
+
+# statistic method
+# statistic method
+anomalies_detected_dates = []
+
+ad_detector = AutoAD(
+    namespace="JC",
+    data_frequency=preprocessor.data_frequency,
+    method="statistic",
+    unit_of_measurement="Wh",
+    lookback_period=7
+)
+
+start_date = pd.Timestamp("2025-06-20")
+end_date = pd.Timestamp("2025-06-25")
+
+# align timezone if the index is tz-aware
+tz = mp_df.index[0].tz if len(mp_df.index) > 0 else None
+if tz is not None:
+    start_date = start_date.tz_localize(tz)
+    end_date = end_date.tz_localize(tz)
+
+detection_date = start_date
+
+while detection_date <= end_date:
+    hist_start = detection_date - pd.Timedelta(days=ad_detector.lookback_period)
+    hist_df = mp_df.loc[(mp_df.index >= hist_start) & (mp_df.index <= detection_date)]
+
+    print(f"\nChecking {detection_date.date()} | lookback window rows: {len(hist_df)}")
+
+    if hist_df.empty:
+        print(f"Skipping {detection_date.date()}: no data in lookback window")
+        detection_date += pd.Timedelta(days=1)
+        continue
+
+    try:
+        score_df_dict = ad_detector.detect(
+            data_dict=data_dict_temp,
+            detect_date=detection_date
         )
-    else:
-        personalized_text = completion_text
 
-    return personalized_text
+        print("count:", getattr(ad_detector, "count", None))
 
+        ad_detector.top_k(
+            k=1,
+            sort_by="deviation_percentage",
+            report=True,
+            plot=True,
+            dev_perc_threshold=0
+        )
+        plt.show()
 
-def main():
-    config = Config()
-    os.environ["LANGFUSE_PUBLIC_KEY"] = config.get('tracing', 'LANGFUSE_PUBLIC_KEY')
-    os.environ["LANGFUSE_SECRET_KEY"] = config.get('tracing', 'LANGFUSE_SECRET_KEY')
-    os.environ["LANGFUSE_HOST"]       = config.get('tracing', 'LANGFUSE_HOST')
+        if getattr(ad_detector, "count", 0) > 0:
+            anomalies_detected_dates.append(detection_date)
 
-    lf = get_client()
-    system_content = get_prompt_template('SYS_PROMPT')
+    except Exception as e:
+        print(f"Detection failed for {detection_date.date()}: {e}")
 
-    az_openai_client = AzureOpenAI(
-        api_key=config.config['AZURE_OPENAI_API_KEY'],
-        api_version=config.get('models', 'AZURE_OPENAI_API_VERSION'),
-        azure_endpoint=config.get('models', 'AZURE_OPENAI_ENDPOINT'),
-    )
+    detection_date += pd.Timedelta(days=1)
 
-    queries = load_queries()
-    print(f"Loaded {len(queries)} queries\n")
-
-    answered = []
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_path = ANSWERED_FOLDER / f"answers_{timestamp}.json"
-
-    for item in queries:
-        query = item["query"]
-        print(f"[{item.get('policy_source','')} | {item.get('section','')} | Q{item.get('question_number','')}]")
-        print(f"Q: {query}")
-
-        try:
-            with lf.start_as_current_observation(as_type="span", name="QnA") as start_trace:
-                with ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(
-                        run_pipeline, query, system_content, az_openai_client, lf, start_trace
-                    )
-                    personalized_text = future.result(timeout=TIMEOUT_SECONDS)
-
-                start_trace.update_trace(
-                    input=query,
-                    output=personalized_text,
-                    user_id='pipeline',
-                )
-                lf.flush()
-
-            print(f"A: {personalized_text}\n{'-'*60}\n")
-            status = "answered"
-
-        except FuturesTimeoutError:
-            print(f"TIMEOUT after {TIMEOUT_SECONDS}s — skipping question.\n{'-'*60}\n")
-            personalized_text = ""
-            status = "timeout"
-
-        except Exception as e:
-            print(f"ERROR: {e} — skipping question.\n{'-'*60}\n")
-            personalized_text = ""
-            status = "error"
-
-        answered.append({
-            "policy_source":   item.get("policy_source", ""),
-            "section":         item.get("section", ""),
-            "question_number": item.get("question_number"),
-            "question":        query,
-            "answer":          personalized_text,
-            "status":          status,
-        })
-
-        # Save incrementally after every question
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(answered, f, ensure_ascii=False, indent=2)
-        print(f"Saved {len(answered)}/{len(queries)} → {out_path}")
-
-    print(f"\nDone. {sum(1 for a in answered if a['status'] == 'answered')} answered, "
-          f"{sum(1 for a in answered if a['status'] == 'timeout')} timed out, "
-          f"{sum(1 for a in answered if a['status'] == 'error')} errored.")
+print("\nAnomalies detected on:")
+for d in anomalies_detected_dates:
+    print(d)
+    
+    
+    
+# load data into a dictionary
+path = os.path.abspath('./data/BSI/electrical')
+csv_files = glob.glob(os.path.join(path, "*.csv"))
+pre_data_dict = {}
+for f in csv_files:
+    df = pd.read_csv(f)
+    pre_data_dict[f.split("/")[-1][:-4]] = df
+    
+    
+# preprocess data
+preprocessor = Preprocessor(pre_data_dict, miss_val_threshold = 0.01)
+data_dict = preprocessor.preprocess()
 
 
-if __name__ == "__main__":
-    main()
+
+# statistic method
+detection_date = pd.to_datetime('2022-11-21')
+ad_detector = AutoAD(namespace = 'bsi', data_frequency = preprocessor.data_frequency, method = 'statistic', unit_of_measurement='Wh')
+score_df_dict = ad_detector.detect(data_dict = data_dict, detect_date = detection_date)
+ad_detector.top_k(k = 5, sort_by = 'deviation_percentage',report = True, plot = True, dev_perc_threshold = 5)
+
+
+
+measuring_point = 'aircon-load-elect'
+data_dict_temp = {measuring_point: data_dict[measuring_point]}
+
+
+# statistic method
+anomalies_detected_dates = []
+
+ad_detector = AutoAD(namespace = 'bsi', data_frequency = preprocessor.data_frequency, method = 'statistic', unit_of_measurement='Wh')
+
+detection_date = pd.to_datetime('2022-12-1')
+while detection_date <= pd.to_datetime('2022-12-31'):
+    score_df_dict = ad_detector.detect(data_dict = data_dict_temp, detect_date = detection_date)
+    ad_detector.top_k(k = 1, sort_by = 'deviation_percentage', report = True, plot = True, dev_perc_threshold = 5)
+    if ad_detector.count > 0:
+        anomalies_detected_dates.append(detection_date)
+    detection_date += pd.Timedelta(1, unit='d')
+    
+    
+    
+for mp in data_dict_temp.keys():
+    df = data_dict[mp].copy()
+    df.plot(figsize=(17,3), title = mp)
+    for i in anomalies_detected_dates:
+        plt.axvspan(i, i + dt.timedelta(days=1),color='red', alpha=0.2)
+        
+        
+# load data into a dictionary
+path = os.path.abspath('../data/NTU')
+csv_files = glob.glob(os.path.join(path, "*.csv"))
+pre_data_dict = {}
+for f in csv_files:
+    df = pd.read_csv(f)
+    pre_data_dict[f.split("/")[-1][:-4]] = df
+    
+    
+# preprocess data
+preprocessor = Preprocessor(pre_data_dict, miss_val_threshold = 0.01)
+data_dict = preprocessor.preprocess()
+
+
+
+measuring_point = 'NTU-50 Nanyang Avenue NS1 Rooftop Singapore 639798  [Starhub] Elect 1 (NA)'
+measuring_point2 = 'NTU-50 Nanyang Avenue Hall 9 Food Court 9 Singapore 639798 Elect 6 (NA)'
+data_dict = {measuring_point: data_dict[measuring_point], measuring_point2: data_dict[measuring_point2]}
+
+
+
+# fb prophet method
+detection_date = pd.to_datetime('2021-04-01')
+ad_detector = AutoAD('NTU', preprocessor.data_frequency, method = 'statistic', lookback_period=30)
+score_df_dict = ad_detector.detect(data_dict = data_dict, detect_date = detection_date)
+final_results = ad_detector.top_k(k = 2, plot = True, dev_perc_threshold = 5)
+
+
+
+# fb prophet method
+detection_date = pd.to_datetime('2021-04-01')
+ad_detector = AutoAD('NTU', preprocessor.data_frequency, method = 'statistic', lookback_period=30)
+while detection_date <= pd.to_datetime('2021-04-03'):
+    score_df_dict = ad_detector.detect(data_dict = data_dict, detect_date = detection_date)
+    ad_detector.top_k(k = 5, plot = True, dev_perc_threshold = 5)
+    detection_date += dt.timedelta(days=1)
+    
+    
+#Octopus Query 
+
+
+import random
+import requests
+import time
+import math
+from pprint import pprint
+import json
+
+import missingno as msno
+import datetime as dt
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+import requests
+import time
+import os
+
+year = 2022
+month = 12
+day = 31
+
+namespace="bsi"
+url = "https://octopus-api.in.spdigital.sg/api/v1/query_range"
+metric = "elect_active_energy_watthours_interval"
+# metric = "water_volume_cubicmetres_interval"
+
+query = '{metric}{{measuring_point_namespace=\"{namespace}\",stage=\"standardized\"}}'.format(metric=metric, namespace=namespace)
+os.environ['TZ'] = 'Asia/Singapore'
+time.tzset()
+
+end = time.mktime((year,month,day,0,0,0,0,0,-1))
+start = end - 180*24*60*60
+today_time = time.time()
+
+step = 1800
+# step = 3600 
+params = {"query": query, "start": start, "end": end, "time": today_time, "step": step}
+response = requests.get(url, params=params)
+reads = response.json()
+
+# print(reads)
+
+df = pd.DataFrame(columns=['Time','Value'])
+full_results = reads['data']['result'] # list
+pprint([result['metric'] for result in full_results])
+
+
+
+
+# process all relevant measuring points and store into dict of df
+mp_dict = {}
+
+for result in full_results:
+    df = pd.DataFrame(columns=['Time','Value'])
+    
+    # store only measuring points with hourly readings
+    if result['metric']['stage'] == 'standardized' and result['metric']['interval'] == "1800":
+        
+        df[['Time', 'Value']] = result['values']
+        df.Time = df.Time.apply(lambda x: dt.datetime.fromtimestamp(x))
+        df.set_index('Time', verify_integrity=True, inplace=True, drop=True)
+        df.Value = df.Value.astype(float)
+        mp_dict[result['metric']['measuring_point']] = df
+        print(result['metric']['measuring_point'])
+        
+        
+
+
+path = os.path.abspath("./data/BSI/electrical")
+if os.path.exists(path):
+    os.chdir(path)
+    for i in mp_dict.keys():
+        filename = str(i) + '.csv'
+        df = mp_dict[i]
+        df.to_csv(filename)
+else:
+    print("{} is not exist.".format(path))
+    
+    
+    
+import os
+import pandas as pd
+import glob
+import datetime as dt
+import matplotlib.pyplot as plt
+import pytz
+from ispots.anomaly_detector import AutoAD, Preprocessor
+
+
+
+# load data into a dictionary
+path = os.path.abspath('../data/JC/electrical')
+csv_files = glob.glob(os.path.join(path, "*.csv"))
+pre_data_dict = {}
+for f in csv_files:
+    df = pd.read_csv(f)
+    pre_data_dict[f.split("/")[-1][:-4]] = df
+
+# preprocess data
+preprocessor = Preprocessor(pre_data_dict, miss_val_threshold = 0.01)
+data_dict = preprocessor.preprocess()
+
+measuring_point = 'dsta_blk-210-1-elect'
+data_dict_temp = {measuring_point: data_dict[measuring_point]}
+
+# statistic method
+anomalies_detected_dates = []
+
+ad_detector = AutoAD(namespace = 'JC', data_frequency = preprocessor.data_frequency, method = 'statistic', unit_of_measurement='Wh', lookback_period=60)
+
+detection_date = pd.to_datetime('2022-11-01')
+while detection_date <= pd.to_datetime('2022-11-13'):
+    score_df_dict = ad_detector.detect(data_dict = data_dict_temp, detect_date = detection_date)
+    ad_detector.top_k(k = 1, sort_by = 'deviation_percentage', report = True, plot = True, dev_perc_threshold = 5)
+    if ad_detector.count > 0:
+        anomalies_detected_dates.append(detection_date)
+    detection_date += pd.Timedelta(1, unit='d')
+    
+    
