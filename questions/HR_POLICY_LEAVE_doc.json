@@ -1,11 +1,11 @@
 {
   "policy_source": "HR_POLICY_LEAVE.markdown",
-  "generated_at": "2026-04-02T09:14:39Z",
+  "generated_at": "2026-04-07T02:50:52Z",
   "question_count": 25,
   "questions": [
     {
       "question_number": 1,
-      "question": "What types of leave are available to me?"
+      "question": "What types of leave are available to me as an employee?"
     },
     {
       "question_number": 2,
@@ -25,83 +25,83 @@
     },
     {
       "question_number": 6,
-      "question": "Can I encash my annual leave, and if so, under what circumstances?"
+      "question": "Can I encash my annual leave at any time?"
     },
     {
       "question_number": 7,
-      "question": "What is the sick leave entitlement for outpatient appointments?"
+      "question": "Under what circumstances can I apply for unpaid leave?"
     },
     {
       "question_number": 8,
-      "question": "How many days of hospitalisation leave am I entitled to?"
+      "question": "What is the sick leave entitlement, and how do I claim it?"
     },
     {
       "question_number": 9,
-      "question": "Do I need a medical certificate to take sick leave?"
+      "question": "How many days of outpatient leave am I entitled to?"
     },
     {
       "question_number": 10,
-      "question": "What is the deadline for submitting a medical certificate for sick leave?"
+      "question": "What is the hospitalization leave entitlement, and what are the conditions for claiming it?"
     },
     {
       "question_number": 11,
-      "question": "Can I apply for unpaid leave if I'm unable to work due to illness?"
+      "question": "Can I take time off for medical appointments during work hours?"
     },
     {
       "question_number": 12,
-      "question": "How do I schedule time off for medical appointments during working hours?"
+      "question": "How many weeks of maternity leave am I entitled to as a female employee?"
     },
     {
       "question_number": 13,
-      "question": "What is the maternity leave entitlement, and what are the eligibility criteria?"
+      "question": "What is the paternity leave entitlement, and how do I claim it?"
     },
     {
       "question_number": 14,
-      "question": "Can my partner take paternity leave if I'm having a child?"
+      "question": "Can I take compassionate leave for an extended family member?"
     },
     {
       "question_number": 15,
-      "question": "How many days of compassionate leave am I entitled to for an immediate family member's passing?"
+      "question": "How many days of marriage leave am I entitled to as a new employee?"
     },
     {
       "question_number": 16,
-      "question": "Can I take marriage leave, and if so, how many days is the entitlement?"
+      "question": "What is study leave, and how do I apply for it?"
     },
     {
       "question_number": 17,
-      "question": "What is study leave, and can I apply for it?"
+      "question": "Can I take unpaid leave if I need to care for a family member?"
     },
     {
       "question_number": 18,
-      "question": "Do I need to apply for leave in advance, and if so, how far in advance?"
+      "question": "How far in advance should I submit my leave application?"
     },
     {
       "question_number": 19,
-      "question": "What factors will my supervisor consider when approving or denying my leave request?"
+      "question": "Who needs to approve my leave application, and what are the approval guidelines?"
     },
     {
       "question_number": 20,
-      "question": "Can I take unpaid leave for personal reasons, and if so, how do I apply?"
+      "question": "Can I take time off on a public holiday if required by work?"
     },
     {
       "question_number": 21,
-      "question": "What public holidays am I entitled to, and what happens if I'm required to work on one?"
+      "question": "What happens if I need to work on a public holiday, and how will it affect my leave balance?"
     },
     {
       "question_number": 22,
-      "question": "Can I get replacement leave or overtime compensation if I'm forced to work on a public holiday?"
+      "question": "How often is the Leave Policy reviewed, and what are the purposes of the review?"
     },
     {
       "question_number": 23,
-      "question": "How often is the Leave Policy reviewed, and what are the purposes of these reviews?"
+      "question": "Who should I contact if I have questions or concerns about the Leave Policy?"
     },
     {
       "question_number": 24,
-      "question": "Who can I contact if I have questions or concerns about the Leave Policy?"
+      "question": "What is the process for applying for special leave types, such as compassionate leave?"
     },
     {
       "question_number": 25,
-      "question": "Are there any exclusions or limitations to the Leave Policy that I should be aware of?"
+      "question": "Can I take annual leave during my probationary period?"
     }
   ]
 }

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file, abort
-from openai import AzureOpenAI
+from openai import AzureOpenAI, BadRequestError
 from dotenv import load_dotenv
 import json
 import re
@@ -179,12 +179,29 @@ def process_file(json_path: Path, n: int, dry_run: bool) -> dict:
 
     sections = []
     for chunk in chunks:
-        qa_list = generate_qa_for_chunk(chunk, n=n, dry_run=dry_run)
-        sections.append({
-            "section":        chunk["title"],
-            "question_count": len(qa_list),
-            "qa_pairs":       qa_list,
-        })
+        try:
+            qa_list = generate_qa_for_chunk(chunk, n=n, dry_run=dry_run)
+            sections.append({
+                "section":        chunk["title"],
+                "question_count": len(qa_list),
+                "qa_pairs":       qa_list,
+            })
+        except BadRequestError as e:
+            # Content policy / guardrail violation — record empty entry and continue
+            sections.append({
+                "section":        chunk["title"],
+                "question_count": 0,
+                "qa_pairs":       [],
+                "skipped_reason": f"Content filter: {e.message}",
+            })
+        except ValueError as e:
+            # Bad model output for this chunk — record empty entry and continue
+            sections.append({
+                "section":        chunk["title"],
+                "question_count": 0,
+                "qa_pairs":       [],
+                "skipped_reason": str(e),
+            })
         time.sleep(0.3)
 
     return {

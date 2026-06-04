@@ -1,107 +1,107 @@
 {
   "policy_source": "HR_POLICY_MED.md",
-  "generated_at": "2026-04-02T09:12:59Z",
+  "generated_at": "2026-06-04T09:15:33Z",
   "question_count": 25,
   "questions": [
     {
       "question_number": 1,
-      "question": "What kind of employees are eligible for medical benefits?"
+      "question": "What is the purpose of this Medical Benefits Policy?"
     },
     {
       "question_number": 2,
-      "question": "How long do I have to wait before being eligible for medical benefits as a new employee?"
+      "question": "Who is covered under this policy?"
     },
     {
       "question_number": 3,
-      "question": "Can my spouse and children get medical coverage under this policy?"
+      "question": "What is the waiting period for new employees to be eligible for benefits?"
     },
     {
       "question_number": 4,
-      "question": "What is the maximum out-of-pocket expense I can expect to pay for outpatient visits?"
+      "question": "Are there any exceptions to the waiting period for workplace injury claims?"
     },
     {
       "question_number": 5,
-      "question": "How much does the company contribute towards my inpatient hospital stay expenses?"
+      "question": "How do I know if my spouse or children are covered under this policy?"
     },
     {
       "question_number": 6,
-      "question": "What is the annual claim limit per employee, and how will it affect my coverage?"
+      "question": "What is included in the annual claim limit per employee?"
     },
     {
       "question_number": 7,
-      "question": "Do I need to use a specific clinic or doctor for medical services?"
+      "question": "Can I use any clinic for my medical treatment, or do I need to go to a panel clinic?"
     },
     {
       "question_number": 8,
-      "question": "How do I submit a claim for medical expenses, and what documents are required?"
+      "question": "What are the co-payment rates for outpatient and inpatient services?"
     },
     {
       "question_number": 9,
-      "question": "Are there any exclusions or non-reimbursable expenses under this policy?"
+      "question": "Are there any non-reimbursable expenses that are not covered under this policy?"
     },
     {
       "question_number": 10,
-      "question": "Can I get a second opinion on my medical condition, and if so, how do I go about it?"
+      "question": "Can I get cashless treatment at panel clinics?"
     },
     {
       "question_number": 11,
-      "question": "What is the process for getting approval for specialist consultations or treatments?"
+      "question": "How do I submit a claim for medical expenses?"
     },
     {
       "question_number": 12,
-      "question": "Can I get a copy of my medical records from the company's HR department?"
+      "question": "What documents are required to process a claim?"
     },
     {
       "question_number": 13,
-      "question": "How do I know if a treatment or procedure is covered under this policy?"
+      "question": "Can I get reimbursement for expenses related to cosmetic procedures or non-prescribed supplements?"
     },
     {
       "question_number": 14,
-      "question": "Can I get reimbursement for over-the-counter medications and supplements?"
+      "question": "How long does it take to process a claim after submission?"
     },
     {
       "question_number": 15,
-      "question": "What happens if I need to see a specialist, but they are not part of the panel clinics?"
+      "question": "Are there any additional benefits for employees with chronic illnesses?"
     },
     {
       "question_number": 16,
-      "question": "How do I know which medical services or treatments are considered preventive care?"
+      "question": "Can I get help with work-related injuries or illnesses under this policy?"
     },
     {
       "question_number": 17,
-      "question": "Can my dependents get separate coverage for chronic illnesses, and if so, how does it work?"
+      "question": "How often will the Medical Benefits Policy be reviewed and updated?"
     },
     {
       "question_number": 18,
-      "question": "What is the process for getting a workplace injury claim approved under this policy?"
+      "question": "Who do I contact if I have questions or concerns about my medical benefits?"
     },
     {
       "question_number": 19,
-      "question": "Can I get reimbursement for travel-related expenses related to medical treatment or appointments?"
+      "question": "What is the process for adding or removing dependents from this policy?"
     },
     {
       "question_number": 20,
-      "question": "How do I know if my medical condition is considered a chronic illness and eligible for extended coverage?"
+      "question": "Are there any specific health screenings or vaccinations that are covered under this policy?"
     },
     {
       "question_number": 21,
-      "question": "Can I get reimbursement for alternative therapies like acupuncture or massage therapy?"
+      "question": "Can I get help with prescription medication costs under this policy?"
     },
     {
       "question_number": 22,
-      "question": "What happens if I need to see a specialist, but they are not available in my area?"
+      "question": "What is the maximum amount of money that can be claimed per year for medical expenses?"
     },
     {
       "question_number": 23,
-      "question": "Can I get reimbursement for medical expenses incurred during travel or abroad?"
+      "question": "Are there any specific requirements for specialist consultations or hospital stays under this policy?"
     },
     {
       "question_number": 24,
-      "question": "How do I know if a treatment or procedure is considered experimental and not covered under this policy?"
+      "question": "Can I get reimbursement for expenses related to experimental treatments or self-inflicted injuries?"
     },
     {
       "question_number": 25,
-      "question": "Can I get reimbursement for medical expenses related to cosmetic procedures, such as plastic surgery?"
+      "question": "Are there any additional benefits or services offered by the Company that are not covered under this policy?"
     }
   ]
 }
