@@ -1,0 +1,83 @@
+# Monopoly Official Rules
+
+## OBJECTIVE
+The object of Monopoly is to become the wealthiest player through buying, renting, and selling property. The last player remaining solvent (not bankrupt) wins the game.
+
+## EQUIPMENT
+The standard Monopoly set contains: 1 game board, 2 dice, 8 player tokens, 28 title deed cards, 16 Chance cards, 16 Community Chest cards, 32 houses, 12 hotels, 1 pack of play money, and 1 banker's tray.
+
+## GAME SETUP
+Place the board on a table. Each player chooses a token and places it on the Go space. Shuffle the Chance and Community Chest cards separately and place them face down on their designated spaces on the board. Each player receives $1,500 divided as follows: two $500 bills, two $100 bills, two $50 bills, six $20 bills, five $10 bills, five $5 bills, and five $1 bills. All remaining money and the title deeds go to the Bank. The player who rolls the highest combined total on both dice goes first. Play proceeds clockwise.
+
+## THE BANKER
+One player is elected Banker. The Banker manages all money, title deeds, houses, and hotels. If the Banker is also a player, they must keep their personal funds separate from the Bank's funds. The Bank never goes bankrupt. If the Bank runs low on money, the Banker may issue IOUs on plain paper.
+
+## ORDER OF PLAY
+On your turn, roll both dice and move your token clockwise the number of spaces shown. After moving, follow the instructions for the space you land on. If you roll doubles, take your turn as normal and then roll again. If you roll doubles three times in a row, you go directly to Jail without collecting $200 for passing Go.
+
+## GOING AROUND THE BOARD - THE GO SPACE
+Each time a player's token lands on or passes over the Go space, the Bank pays that player $200. A player who lands directly on Go also collects $200. You collect $200 only once per pass of Go, regardless of how you got there.
+
+## BUYING PROPERTY
+When you land on an unowned property (street, railroad, or utility), you may buy it from the Bank at the printed price. If you choose to buy it, pay the Bank the listed price and receive the title deed card. If you choose not to buy it, the Bank immediately auctions it to the highest bidder, starting at any price (including $1).
+
+## AUCTIONS
+When a player declines to buy a property they landed on, the Bank auctions it immediately. Any player, including the one who declined, may bid. Bidding starts at any amount. The highest bidder pays the Bank and receives the title deed. A player may not auction their own already-owned properties during normal gameplay.
+
+## PAYING RENT
+When you land on a property owned by another player, you must pay that player rent. The amount is shown on the title deed card. Rent is only owed if the owner asks for it before the next player rolls the dice. If the owner fails to ask before the next roll, no rent is collected for that turn. You cannot collect rent on a mortgaged property.
+
+## COLOR GROUPS AND MONOPOLIES
+A player who owns all the properties in a color group has a monopoly. The rent on unimproved properties within a monopoly is doubled. No houses or hotels may be built until the owner has a complete monopoly of that color group. A mortgaged property within a color group breaks the monopoly benefit — doubled rent cannot be charged on the remaining unmortgaged properties in that group until the mortgage is lifted.
+
+## RAILROADS
+There are four railroads: Reading Railroad, Pennsylvania Railroad, B&O Railroad, and Short Line. Each costs $200 to buy. Rent depends on how many railroads the owner holds: 1 railroad = $25 rent, 2 railroads = $50 rent, 3 railroads = $100 rent, 4 railroads = $200 rent.
+
+## UTILITIES
+There are two utilities: Electric Company and Water Works, each costing $150. If a player owns one utility, the rent equals 4 times the amount rolled on the dice on that turn. If a player owns both utilities, the rent equals 10 times the amount rolled on the dice on that turn. The rent-collecting player uses the same dice roll that moved the paying player to the utility.
+
+## CHANCE AND COMMUNITY CHEST
+When you land on a Chance or Community Chest space, draw the top card from the respective deck and follow its instructions. After use, return the card face-down to the bottom of the deck. If you draw a Get Out of Jail Free card, keep it until you use it or sell it to another player for an agreed price.
+
+## INCOME TAX
+If you land on the Income Tax space, you must pay the Bank $200, or you may pay 10% of your total worth — whichever you choose. Your total worth is all cash on hand plus the printed purchase price of all mortgaged and unmortgaged properties plus the cost price of all buildings you own. You must decide which option you are paying before you calculate your total worth.
+
+## LUXURY TAX
+If you land on the Luxury Tax space, pay $100 to the Bank.
+
+## JAIL
+You are sent to Jail when: (1) your token lands on the Go to Jail space, (2) you draw a Go to Jail Chance or Community Chest card, or (3) you roll doubles three times in a row. When sent to Jail, move your token directly to the Jail space. You do not collect $200 for passing Go on this move. While in Jail you cannot collect doubled rent on unimproved monopoly properties, but you can still collect rent normally. To get out of Jail you may: (1) pay a $50 fine before rolling the dice on either of your next two turns, (2) use a Get Out of Jail Free card, or (3) roll doubles on any of your next three turns. If you do not roll doubles by your third turn, you must pay the $50 fine and then move the number shown on the dice. If you are Just Visiting Jail, you are not in Jail and face no penalties.
+
+## FREE PARKING
+Free Parking is just a resting space. No money or reward is collected when landing on it. Any house rules involving collecting money on Free Parking are not part of the official rules.
+
+## HOUSES
+Once a player owns a complete color group, they may buy houses from the Bank during their turn. Houses must be built evenly across all properties in the color group — you cannot place a second house on any property until every property in the group has at least one house. The cost per house is printed on each title deed. You may build only 4 houses per property before upgrading to a hotel. Houses may be sold back to the Bank at any time for half the printed purchase price.
+
+## HOTELS
+A player who has four houses on each property in a color group may buy a hotel from the Bank. Pay the hotel price and return the four houses to the Bank. Only one hotel may be placed per property. Hotels may be sold back to the Bank for half the printed purchase price. The four houses removed when buying a hotel are returned to the Bank's supply.
+
+## BUILDING SHORTAGES
+The Bank has a limited supply of 32 houses and 12 hotels. If the Bank has no houses left, no one may build until houses are returned (via sales or hotel upgrades returning houses). If a hotel shortage occurs, players may build as many houses as the Bank has available and wait for more to become available.
+
+## PROPERTY VALUES AND RENTS
+Brown group (house cost $50): Mediterranean Avenue — buy $60, rent $2, with 1H $10, 2H $30, 3H $90, 4H $160, hotel $250. Baltic Avenue — buy $60, rent $4, with 1H $20, 2H $60, 3H $180, 4H $320, hotel $450.
+Light Blue group (house cost $50): Oriental Avenue — buy $100, rent $6, with 1H $30, 2H $90, 3H $270, 4H $400, hotel $550. Vermont Avenue — buy $100, rent $6, same rents as Oriental. Connecticut Avenue — buy $120, rent $8, with 1H $40, 2H $100, 3H $300, 4H $450, hotel $600.
+Pink group (house cost $100): St. Charles Place — buy $140, rent $10, with 1H $50, 2H $150, 3H $450, 4H $625, hotel $750. States Avenue — buy $140, rent $10, same rents. Virginia Avenue — buy $160, rent $12, with 1H $60, 2H $180, 3H $500, 4H $700, hotel $900.
+Orange group (house cost $100): St. James Place — buy $180, rent $14, with 1H $70, 2H $200, 3H $550, 4H $750, hotel $950. Tennessee Avenue — buy $180, rent $14, same rents. New York Avenue — buy $200, rent $16, with 1H $80, 2H $220, 3H $600, 4H $800, hotel $1000.
+Red group (house cost $150): Kentucky Avenue — buy $220, rent $18, with 1H $90, 2H $250, 3H $700, 4H $875, hotel $1050. Indiana Avenue — buy $220, rent $18, same rents. Illinois Avenue — buy $240, rent $20, with 1H $100, 2H $300, 3H $750, 4H $925, hotel $1100.
+Yellow group (house cost $150): Atlantic Avenue — buy $260, rent $22, with 1H $110, 2H $330, 3H $800, 4H $975, hotel $1150. Ventnor Avenue — buy $260, rent $22, same rents. Marvin Gardens — buy $280, rent $24, with 1H $120, 2H $360, 3H $850, 4H $1025, hotel $1200.
+Green group (house cost $200): Pacific Avenue — buy $300, rent $26, with 1H $130, 2H $390, 3H $900, 4H $1100, hotel $1275. North Carolina Avenue — buy $300, rent $26, same rents. Pennsylvania Avenue — buy $320, rent $28, with 1H $150, 2H $450, 3H $1000, 4H $1200, hotel $1400.
+Dark Blue group (house cost $200): Park Place — buy $350, rent $35, with 1H $175, 2H $500, 3H $1100, 4H $1300, hotel $1500. Boardwalk — buy $400, rent $50, with 1H $200, 2H $600, 3H $1400, 4H $1700, hotel $2000.
+
+## MORTGAGING PROPERTY
+Unimproved properties may be mortgaged to the Bank for the mortgage value printed on the title deed (half the purchase price). No rent can be collected on a mortgaged property but the owner still holds the deed. To unmortgage a property, pay the Bank the face value of the mortgage plus 10% interest. All buildings must be sold back to the Bank before a property can be mortgaged. If you acquire a mortgaged property through trading, you may either pay off the mortgage immediately (face value plus 10%) or keep it mortgaged, but must pay 10% interest to the Bank at the time of acquisition and pay the remaining mortgage plus another 10% when you choose to lift it.
+
+## TRADING AND SELLING
+Players may sell or trade properties, Get Out of Jail Free cards, and cash with each other at any time during their own turn or between another player's roll and move. All buildings must be sold back to the Bank before a property can be traded — buildings cannot be transferred between players directly. Trades may include any combination of properties and cash. There are no restrictions on the terms of a trade; players may agree to any deal.
+
+## BANKRUPTCY
+A player is bankrupt when they owe more money than they can raise — including selling houses and hotels at half price and mortgaging all properties. If bankrupt to another player, the bankrupt player must give all their remaining assets (cash, title deeds, any Get Out of Jail Free cards) to that player. The receiving player must pay the Bank 10% interest on any mortgaged properties they receive. If bankrupt to the Bank, all assets are returned to the Bank, and title deeds are auctioned off immediately. A bankrupt player is out of the game.
+
+## WINNING THE GAME
+The last player who has not gone bankrupt wins the game. If you wish to set a time limit, the player with the most total assets (cash plus property values plus building costs) when time expires wins.
