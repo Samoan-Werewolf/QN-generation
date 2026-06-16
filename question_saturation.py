@@ -205,6 +205,64 @@ def find_elbow(k: np.ndarray, y: np.ndarray) -> int:
     return int(k[int(np.argmax(dists))])
 
 
+# ── ELBOW SUMMARY ─────────────────────────────────────
+def summarize_elbow(results: dict, elbow_k: int) -> str:
+    """Return a plain-English explanation of why elbow_k was chosen."""
+    k        = results["k"]
+    cov_mean = results["cov_mean"]
+    marginal = results["marginal"]
+    red_mean = results["red_mean"]
+    n_chunks = results["n_chunks"]
+    n_total  = int(k[-1])
+
+    elbow_idx  = elbow_k - 1
+    elbow_cov  = cov_mean[elbow_idx] * 100
+    final_cov  = cov_mean[-1] * 100
+    missed_cov = final_cov - elbow_cov
+
+    # Average marginal coverage gain before the elbow (questions 1 … elbow_k)
+    pre_avg  = float(marginal[:elbow_k].mean())  * 100 if elbow_k > 0         else 0.0
+    # Average marginal coverage gain after the elbow (questions elbow_k+1 … n)
+    post_avg = float(marginal[elbow_k:].mean())  * 100 if elbow_k < n_total   else 0.0
+
+    elbow_red = red_mean[elbow_idx] * 100
+
+    # Describe the redundancy level in plain words
+    if elbow_red < 20:
+        red_label = "low"
+    elif elbow_red < 50:
+        red_label = "moderate"
+    else:
+        red_label = "high"
+
+    lines = [
+        "",
+        "── SATURATION SUMMARY " + "─" * 47,
+        f"Sweet spot: {elbow_k} question{'s' if elbow_k != 1 else ''}  "
+        f"→  {elbow_cov:.0f}% of {n_chunks} document chunks covered",
+        "",
+        "Why this point was chosen:",
+        f"  1. Coverage gain  — Questions 1–{elbow_k} each added an average of "
+        f"{pre_avg:.1f}% new coverage per question.",
+        f"     After question {elbow_k}, that drops sharply to ~{post_avg:.1f}% per "
+        f"question — a {pre_avg - post_avg:.1f} percentage-point fall.",
+        f"  2. Redundancy     — At question {elbow_k}, new questions are already "
+        f"{elbow_red:.0f}% similar ({red_label}) to the existing set,",
+        f"     meaning they are largely rephrasing topics already covered.",
+        f"  3. Remaining gain — Using all {n_total} questions would add only "
+        f"{missed_cov:.0f}% more coverage ({final_cov:.0f}% total),",
+        f"     not worth the extra {n_total - elbow_k} questions.",
+        "",
+        "Detection method:",
+        f"  The elbow was found geometrically: every point on the mean coverage",
+        f"  curve was measured against the straight line from (1, {cov_mean[0]*100:.0f}%)",
+        f"  to ({n_total}, {final_cov:.0f}%). Question {elbow_k} sits furthest from that",
+        f"  baseline, marking the sharpest change in slope (point of diminishing returns).",
+        "─" * 69,
+    ]
+    return "\n".join(lines)
+
+
 # ── PLOTTING ───────────────────────────────────────────
 def plot(results, elbow_k, out_path):
     k = results["k"]
@@ -283,11 +341,15 @@ def main(doc_path, questions_path, out_path="saturation.png"):
           f"({results['cov_mean'][elbow_k-1]*100:.0f}% coverage)")
     print(f"Full set    : {len(questions)} questions "
           f"({results['cov_mean'][-1]*100:.0f}% coverage)")
+    print(summarize_elbow(results, elbow_k))
 
     plot(results, elbow_k, out_path)
     return results, elbow_k
 
 
 if __name__ == "__main__":
-    main("HR_POLICY_MED.md", "HR_POLICY_MED_doc.json",
-         "/home/claude/saturation.png")
+    main(
+        "policies/HR_POLICY_LEAVE.markdown",          # your policy document
+        "questions/HR_POLICY_LEAVE_doc.json",    # the JSON from qn_gen_personal.py
+        "saturation.png"                        # output graph saved here
+    )

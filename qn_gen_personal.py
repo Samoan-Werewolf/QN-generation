@@ -13,13 +13,17 @@ app = Flask(__name__)
 
 # ── CONFIG ─────────────────────────────────────────────
 BASE_DIR   = Path(__file__).resolve().parent
-INPUT_DIR  = BASE_DIR / "knowledge"
+INPUT_DIR  = BASE_DIR / "policies"
 OUTPUT_DIR = BASE_DIR / "questions"
 
 OLLAMA_URL          = "http://localhost:11434/api/generate"
 MODEL_NAME          = "llama3.2"
 OLLAMA_TIMEOUT      = 120
 QUESTIONS_PER_FILE  = 25
+
+MAX_RETRIES   = 3   # retry attempts per Ollama call on error or bad JSON
+RETRY_DELAY_S = 5   # seconds between retries
+BATCH_SIZE    = 25  # questions generated per Ollama call (checkpointed after each)
 
 DEFAULT_DOMAIN  = "general"   # e.g. "HR", "e-commerce", "finance"
 DEFAULT_PERSONA = "user"      # e.g. "employee", "customer", "student"
@@ -29,7 +33,7 @@ SUPPORTED_EXTENSIONS = [".md", ".markdown", ".txt", ".csv", ".json"]
 
 # ── BAD QUESTIONS ──────────────────────────────────────
 # Set to 0 to disable bad question generation entirely.
-BAD_QUESTION_PERCENTAGE = 20  # % of total questions that will be "bad"
+BAD_QUESTION_PERCENTAGE = 0  # % of total questions that will be "bad"
 
 # Add, remove, or toggle types here. Each needs: name, enabled, description, instruction.
 BAD_QUESTION_TYPES = [
@@ -176,6 +180,32 @@ def parse_json_response(raw: str) -> list[dict]:
     return json.loads(clean)
 
 
+def _call_with_retry(prompt: str, context: str = "") -> list[dict]:
+    """Call Ollama and parse the JSON response, retrying up to MAX_RETRIES times
+    on connection errors, Ollama error strings, or JSON parse failures."""
+    tag = f" ({context})" if context else ""
+    last_err = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        raw = call_ollama(prompt)
+        if raw.startswith("Error:"):
+            last_err = raw
+            print(f"[Retry {attempt}/{MAX_RETRIES}{tag}] Ollama error: {raw}")
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_S)
+            continue
+        try:
+            result = parse_json_response(raw)
+            if not isinstance(result, list) or not result:
+                raise ValueError("Empty or non-list JSON response")
+            return result
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = str(e)
+            print(f"[Retry {attempt}/{MAX_RETRIES}{tag}] JSON error: {e}")
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_S)
+    raise RuntimeError(f"All {MAX_RETRIES} attempts failed{tag}: {last_err}")
+
+
 # ── Q&A GENERATION ─────────────────────────────────────
 
 def generate_bad_questions(document_content: str, n_bad: int) -> list[dict]:
@@ -198,13 +228,7 @@ def generate_bad_questions(document_content: str, n_bad: int) -> list[dict]:
             description=bad_type["description"],
             instruction=bad_type["instruction"],
         )
-        raw = call_ollama(prompt)
-        if raw.startswith("Error:"):
-            raise RuntimeError(raw)
-        try:
-            questions = parse_json_response(raw)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Model returned invalid JSON for type '{bad_type['name']}': {e}\n\nRaw:\n{raw}")
+        questions = _call_with_retry(prompt, context=f"bad:{bad_type['name']}")
         for q in questions:
             q["question_type"] = bad_type["name"]
         all_bad.extend(questions)
@@ -212,7 +236,15 @@ def generate_bad_questions(document_content: str, n_bad: int) -> list[dict]:
     return all_bad
 
 
-def generate_questions(policy_content: str, n: int, dry_run: bool) -> list[dict]:
+def generate_questions(policy_content: str, n: int, dry_run: bool,
+                       on_batch_complete=None) -> list[dict]:
+    """Generate n questions in batches of BATCH_SIZE.
+
+    on_batch_complete(questions_so_far) is called after each successful batch
+    so the caller can checkpoint partial progress to disk.
+    If a batch fails after MAX_RETRIES, it is skipped with a warning and
+    generation continues with the next batch.
+    """
     n_bad  = round(n * BAD_QUESTION_PERCENTAGE / 100)
     n_good = n - n_bad
 
@@ -233,45 +265,55 @@ def generate_questions(policy_content: str, n: int, dry_run: bool) -> list[dict]
             q["question_number"] = i
         return combined
 
-    good_questions = []
-    if n_good > 0:
+    accumulated = []
+
+    # Good questions — generated in BATCH_SIZE chunks with partial saves
+    remaining = n_good
+    batch_num = 0
+    while remaining > 0:
+        batch_num += 1
+        batch = min(BATCH_SIZE, remaining)
         prompt = QA_PROMPT.format(
             document_content=policy_content[:6000],
-            n=n_good,
+            n=batch,
             domain=DEFAULT_DOMAIN,
             persona=DEFAULT_PERSONA,
         )
-        raw = call_ollama(prompt)
-        if raw.startswith("Error:"):
-            raise RuntimeError(raw)
         try:
-            good_questions = parse_json_response(raw)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Model did not return valid JSON: {e}\n\nRaw:\n{raw}")
-        if not isinstance(good_questions, list) or len(good_questions) == 0:
-            raise ValueError("Expected a JSON array of questions but got something else.")
-        for q in good_questions:
-            q["question_type"] = "good"
+            questions = _call_with_retry(prompt, context=f"good batch {batch_num} ({batch} questions)")
+            for q in questions:
+                q["question_type"] = "good"
+            accumulated.extend(questions)
+            if on_batch_complete:
+                on_batch_complete(list(accumulated))
+        except RuntimeError as e:
+            print(f"[Warning] Batch {batch_num} failed permanently — skipping {batch} questions. "
+                  f"{len(accumulated)} saved so far. Error: {e}")
+        remaining -= batch
 
-    bad_questions = generate_bad_questions(policy_content, n_bad)
+    # Bad questions — already small per type, retried internally
+    try:
+        bad_questions = generate_bad_questions(policy_content, n_bad)
+        accumulated.extend(bad_questions)
+        if on_batch_complete:
+            on_batch_complete(list(accumulated))
+    except RuntimeError as e:
+        print(f"[Warning] Bad question generation failed permanently: {e}")
 
-    combined = good_questions + bad_questions
-    random.shuffle(combined)
-    for i, q in enumerate(combined, 1):
+    random.shuffle(accumulated)
+    for i, q in enumerate(accumulated, 1):
         q["question_number"] = i
 
-    return combined
+    return accumulated
 
 
-def process_file(md_path: Path, n: int, dry_run: bool) -> dict:
-    policy_content = read_document(md_path)
-    questions      = generate_questions(policy_content, n=n, dry_run=dry_run)
-
+def _write_outputs(stem: str, questions: list[dict], policy_source: str) -> dict:
+    """Write questions to JSON and CSV, returning the output dict."""
     good_count = sum(1 for q in questions if q.get("question_type") == "good")
     bad_count  = len(questions) - good_count
 
     output = {
-        "policy_source":  md_path.name,
+        "policy_source":  policy_source,
         "generated_at":   time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "question_count": len(questions),
         "good_count":     good_count,
@@ -279,13 +321,10 @@ def process_file(md_path: Path, n: int, dry_run: bool) -> dict:
         "questions":      questions,
     }
 
-    stem = md_path.stem
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
     (OUTPUT_DIR / (stem + "_doc.json")).write_text(
         json.dumps(output, indent=2), encoding="utf-8"
     )
-
     csv_path = OUTPUT_DIR / (stem + "_doc.csv")
     with csv_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["question_number", "question", "question_type"])
@@ -293,6 +332,20 @@ def process_file(md_path: Path, n: int, dry_run: bool) -> dict:
         writer.writerows(questions)
 
     return output
+
+
+def process_file(md_path: Path, n: int, dry_run: bool) -> dict:
+    policy_content = read_document(md_path)
+    stem = md_path.stem
+
+    def save_partial(questions_so_far: list[dict]):
+        _write_outputs(stem, questions_so_far, md_path.name)
+
+    questions = generate_questions(
+        policy_content, n=n, dry_run=dry_run,
+        on_batch_complete=save_partial,
+    )
+    return _write_outputs(stem, questions, md_path.name)
 
 
 # ── ROUTES ─────────────────────────────────────────────
