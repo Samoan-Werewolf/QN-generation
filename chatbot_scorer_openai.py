@@ -203,6 +203,10 @@ PASS_THRESHOLD_GUARDRAILS = 4.0   # safety/compliance (GUARDRAIL_METRICS)
 #
 def label(avg_score: float, threshold: float) -> str:
     return "pass" if avg_score >= threshold else "fail"
+
+# Set to True to generate an improved answer for any row that fails
+# the answer quality or internal metrics. Saved in the 'improved_answer' column.
+ENABLE_IMPROVEMENT = True
 # ───────────────────────────────────────────────────────
 
 
@@ -475,6 +479,62 @@ def score_guardrails(
     return result
 
 
+IMPROVE_PROMPT = """
+You are improving a chatbot's answer that scored poorly on a quality evaluation.
+
+Knowledge document the chatbot is based on:
+---
+{knowledge_context}
+---
+
+Original question:
+{question}
+
+Original answer (scored poorly):
+{original_answer}
+
+Metrics that failed and their scores:
+{failed_metrics}
+
+Your task:
+Write an improved answer to the question that directly addresses the weaknesses above.
+- Stay strictly grounded in the knowledge document — do not fabricate any information
+- Use a friendly, professional tone
+- Structure the response with bullet points or numbered steps where appropriate
+- Be complete: include any prerequisite steps or conditions the user needs to know first
+
+Respond ONLY with the improved answer. No preamble, no explanation.
+""".strip()
+
+
+def generate_improved_answer(
+    question: str,
+    answer: str,
+    knowledge_context: str,
+    result: dict,
+) -> str:
+    failed_lines = []
+    for m in METRICS:
+        score = result.get(m["name"])
+        if score is not None and float(score) < PASS_THRESHOLD_METRICS:
+            failed_lines.append(f"- {m['name']}: {score}/5 (threshold: {PASS_THRESHOLD_METRICS})")
+    for m in INTERNAL_METRICS:
+        score = result.get(m["name"])
+        if score is not None and float(score) < PASS_THRESHOLD_INTERNAL:
+            failed_lines.append(f"- {m['name']}: {score}/5 (threshold: {PASS_THRESHOLD_INTERNAL})")
+
+    failed_metrics = "\n".join(failed_lines) if failed_lines else "Overall score below threshold"
+
+    prompt = IMPROVE_PROMPT.format(
+        knowledge_context=knowledge_context,
+        question=question,
+        original_answer=answer,
+        failed_metrics=failed_metrics,
+    )
+    raw = call_llm(prompt)
+    return "" if raw.startswith("Error:") else raw
+
+
 def read_knowledge_dir() -> str:
     if not KNOWLEDGE_DIR.exists():
         return ""
@@ -611,6 +671,17 @@ def evaluate_csv(input_path: Path, knowledge_context: str) -> list[dict]:
                 except ValueError:
                     result["latency_ms"] = latency_ms
                     result["latency_flag"] = "invalid"
+
+            if ENABLE_IMPROVEMENT:
+                answer_failed   = result.get("label") == "fail"
+                internal_failed = result.get("internal_label") == "fail"
+                if answer_failed or internal_failed:
+                    print(f"    → Generating improved answer for Q{qnum}...")
+                    result["improved_answer"] = generate_improved_answer(
+                        question, answer, knowledge_context, result,
+                    )
+                else:
+                    result["improved_answer"] = ""
 
             results.append(result)
 
