@@ -1,107 +1,509 @@
 {
   "policy_source": "HR_POLICY_LEAVE.markdown",
-  "generated_at": "2026-04-07T02:50:52Z",
-  "question_count": 25,
+  "generated_at": "2026-06-16T08:32:31Z",
+  "question_count": 100,
+  "good_count": 100,
+  "bad_count": 0,
   "questions": [
     {
       "question_number": 1,
-      "question": "What types of leave are available to me as an employee?"
+      "question": "How is annual leave entitlement calculated for new employees?",
+      "question_type": "good"
     },
     {
       "question_number": 2,
-      "question": "How do I calculate my annual leave entitlement if I join mid-year?"
+      "question": "What is the definition of immediate family for leave purposes in this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 3,
-      "question": "Can I carry forward unused annual leave to the next year?"
+      "question": "Can employees use their annual leave entitlement for travel or training purposes?",
+      "question_type": "good"
     },
     {
       "question_number": 4,
-      "question": "What is the maximum number of days that can be carried forward?"
+      "question": "How much notice must an employee give before taking leave?",
+      "question_type": "good"
     },
     {
       "question_number": 5,
-      "question": "When do I need to use my carried-forward leave by?"
+      "question": "What is the maximum amount of carry forward leave that can be taken?",
+      "question_type": "good"
     },
     {
       "question_number": 6,
-      "question": "Can I encash my annual leave at any time?"
+      "question": "How long is maternity leave entitled to female employees under this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 7,
-      "question": "Under what circumstances can I apply for unpaid leave?"
+      "question": "What happens to an employee's leave balance if they resign or are terminated?",
+      "question_type": "good"
     },
     {
       "question_number": 8,
-      "question": "What is the sick leave entitlement, and how do I claim it?"
+      "question": "Under what circumstances can leave be denied?",
+      "question_type": "good"
     },
     {
       "question_number": 9,
-      "question": "How many days of outpatient leave am I entitled to?"
+      "question": "Are there any exceptions to the general principles outlined in this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 10,
-      "question": "What is the hospitalization leave entitlement, and what are the conditions for claiming it?"
+      "question": "Who has the final say over approving or denying a leave request?",
+      "question_type": "good"
     },
     {
       "question_number": 11,
-      "question": "Can I take time off for medical appointments during work hours?"
+      "question": "What is the procedure for applying sick leave under this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 12,
-      "question": "How many weeks of maternity leave am I entitled to as a female employee?"
+      "question": "Are there any exceptions or special cases not covered by this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 13,
-      "question": "What is the paternity leave entitlement, and how do I claim it?"
+      "question": "How does the company determine when to approve or reject a leave application?",
+      "question_type": "good"
     },
     {
       "question_number": 14,
-      "question": "Can I take compassionate leave for an extended family member?"
+      "question": "What is the entitlement for compassionate leave in this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 15,
-      "question": "How many days of marriage leave am I entitled to as a new employee?"
+      "question": "What types of leave are available to employees under this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 16,
-      "question": "What is study leave, and how do I apply for it?"
+      "question": "What is the maximum amount of time an employee can take off for hospitalisation?",
+      "question_type": "good"
     },
     {
       "question_number": 17,
-      "question": "Can I take unpaid leave if I need to care for a family member?"
+      "question": "How does the company ensure compliance with labour laws?",
+      "question_type": "good"
     },
     {
       "question_number": 18,
-      "question": "How far in advance should I submit my leave application?"
+      "question": "Can employees take leave for personal reasons not mentioned in the policy?",
+      "question_type": "good"
     },
     {
       "question_number": 19,
-      "question": "Who needs to approve my leave application, and what are the approval guidelines?"
+      "question": "How much paid leave is available for medical appointments?",
+      "question_type": "good"
     },
     {
       "question_number": 20,
-      "question": "Can I take time off on a public holiday if required by work?"
+      "question": "Can contract staff apply for leave under this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 21,
-      "question": "What happens if I need to work on a public holiday, and how will it affect my leave balance?"
+      "question": "How are public holidays handled under this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 22,
-      "question": "How often is the Leave Policy reviewed, and what are the purposes of the review?"
+      "question": "How does the company handle marriage leave under this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 23,
-      "question": "Who should I contact if I have questions or concerns about the Leave Policy?"
+      "question": "Can male employees take paternity leave under this policy?",
+      "question_type": "good"
     },
     {
       "question_number": 24,
-      "question": "What is the process for applying for special leave types, such as compassionate leave?"
+      "question": "What are the guidelines for supervisors to consider when approving leave requests?",
+      "question_type": "good"
     },
     {
       "question_number": 25,
-      "question": "Can I take annual leave during my probationary period?"
+      "question": "Who reviews and approves leave applications?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 26,
+      "question": "Can employees use their annual leave balance during maternity/paternity leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 27,
+      "question": "How do public holidays affect employee work schedules and compensation?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 28,
+      "question": "Can employees use their annual leave balance to cover extended illness?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 29,
+      "question": "Can employees work on public holidays without pay?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 30,
+      "question": "Can employees be required to work on public holidays under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 31,
+      "question": "Can employees use their annual leave balance for extended illness if they have more than 5 years of service?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 32,
+      "question": "Can employees take study leave under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 33,
+      "question": "What types of leave are available to employees under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 34,
+      "question": "What is the maximum amount of annual leave entitlement for an employee with more than 5 years of service?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 35,
+      "question": "Can employees apply for study leave under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 36,
+      "question": "What is the process for applying for unpaid leave due to prolonged illness?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 37,
+      "question": "How much paid leave is available for marriage leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 38,
+      "question": "How long does an employee have to use their carry forward leave after it is carried over?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 39,
+      "question": "Is leave encashment allowed for employees who resign or are laid off?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 40,
+      "question": "What is the purpose of planning leave in advance according to the company's guiding principles?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 41,
+      "question": "What are the conditions for taking compassionate leave under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 42,
+      "question": "How does pro-rated leave work for employees who join mid-year?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 43,
+      "question": "How many days of marriage leave are available to employees?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 44,
+      "question": "When is this policy reviewed, and what are the reasons for review?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 45,
+      "question": "How many weeks of maternity leave are entitled to female employees under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 46,
+      "question": "Is leave encashment allowed under this policy, and if so, under what circumstances?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 47,
+      "question": "How does the carry forward policy work for unused leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 48,
+      "question": "Can employees take study leave at management discretion?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 49,
+      "question": "How many annual leave days are entitled to employees with less than 1 year of service?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 50,
+      "question": "What is the maximum amount of carry forward leave allowed under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 51,
+      "question": "What is the relationship between compassionate leave and family relationships?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 52,
+      "question": "How does the company handle leave for employees with disabilities under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 53,
+      "question": "Can employees join the company mid-year and still receive full annual leave entitlement?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 54,
+      "question": "Who do I contact for enquiries about this leave policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 55,
+      "question": "How is the company's approach to work-life balance reflected in this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 56,
+      "question": "What is the process for reviewing and updating this leave policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 57,
+      "question": "Can employees be granted unpaid leave under exceptional circumstances?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 58,
+      "question": "Under what circumstances can an employee encash unused leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 59,
+      "question": "How does the company ensure fair and consistent application of leave policies across all employees?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 60,
+      "question": "What is the procedure for applying leave via the HR system?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 61,
+      "question": "How often is this leave policy reviewed to ensure compliance with labour laws and company practices?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 62,
+      "question": "How does the company's leave policy align with its overall business objectives?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 63,
+      "question": "How much notice must an employee give before taking leave, according to the application process?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 64,
+      "question": "What happens to unpaid leave under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 65,
+      "question": "How is the policy reviewed and updated annually?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 66,
+      "question": "Can male employees take paternity leave under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 67,
+      "question": "How does the company handle leave encashment in cases where an employee resigns or leaves the company?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 68,
+      "question": "Can employees take leave for bereavement of a family member?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 69,
+      "question": "What are the conditions for taking leave due to an immediate family member's illness or injury?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 70,
+      "question": "Can employees carry forward more than 5 days of leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 71,
+      "question": "Can employees take study leave without management approval?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 72,
+      "question": "What types of leave are available to employees under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 73,
+      "question": "Can employees take time off for medical appointments during working hours?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 74,
+      "question": "Can employees take leave for medical appointments during working hours?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 75,
+      "question": "What is the process for submitting a leave application via the HR system?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 76,
+      "question": "How does this policy align with labour laws and company practices?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 77,
+      "question": "Who can an employee contact with questions or concerns about this leave policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 78,
+      "question": "How long does an employee need to provide a medical certificate for sick leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 79,
+      "question": "What is the purpose of the Leave Policy, according to the company's commitment?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 80,
+      "question": "How many days of marriage leave are entitled to employees under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 81,
+      "question": "How is annual leave entitlement calculated for new employees?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 82,
+      "question": "How often is this leave policy reviewed and updated, according to the company's guidelines?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 83,
+      "question": "What is the process for submitting a leave application?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 84,
+      "question": "What are the requirements for taking compassionate leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 85,
+      "question": "Can employees take leave for extended illness under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 86,
+      "question": "How far in advance must an employee submit their leave application?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 87,
+      "question": "What happens to unused leave after the 5-day carry-forward limit is reached?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 88,
+      "question": "What is the process for submitting a leave application via the HR system?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 89,
+      "question": "How many days of outpatient leave are entitled to employees under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 90,
+      "question": "Who can employees contact with questions or concerns about this leave policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 91,
+      "question": "Who has the final say in approving or denying leave requests under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 92,
+      "question": "Can supervisors approve or reject leave applications based on business needs and workload?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 93,
+      "question": "How much notice is required when applying for leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 94,
+      "question": "Can employees take leave for bereavement under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 95,
+      "question": "What are the conditions for taking sick leave under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 96,
+      "question": "What is the maximum amount of time an employee can take for extended illness?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 97,
+      "question": "What types of leave are available to employees under this policy?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 98,
+      "question": "How does the company define a working day for leave purposes?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 99,
+      "question": "Can employees carry forward more than 5 days of leave?",
+      "question_type": "good"
+    },
+    {
+      "question_number": 100,
+      "question": "Can an employee take time off for medical appointments without using sick leave?",
+      "question_type": "good"
     }
   ]
 }
