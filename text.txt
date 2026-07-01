@@ -1,0 +1,7 @@
+curl -X POST http://localhost:5001/run_site \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "description": "An HR chatbot that answers questions about company policies",
+    "n_questions": 25
+  }'
